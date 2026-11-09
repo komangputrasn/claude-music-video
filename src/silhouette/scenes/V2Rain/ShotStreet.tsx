@@ -54,9 +54,11 @@ export const ShotStreet: React.FC<{t: number; abs: number}> = ({t, abs}) => {
       <Iris position={[0, SCR_Y - SCR_H / 2 + 6.2, SCR_Z + 0.05]} radius={2.2} time={t} intensity={1.4} pupil={0.3 + 0.05 * bass} />
       {/* the lyric: black letters standing on the screen */}
       {/* (explicit rows: 3 rows that stay clear of the iris and between the banners) */}
-      {/* line 23 carries a control word: printed as black screen letters (mode "screen", colour void) so PATENT itself
-          is authRed — in "dark" mode it stays black with only a red glow, which on the bone screen washes to pink */}
-      <LyricBlock line={23} time={t} rows={[[0, 1, 2], [3, 4, 5], [6, 7, 8]]} align="center" anchor="top" mode="screen"
+      {/* line 23: only its tail "WAY." (sung 110.00–110.40) — V2Car's patent claim already showed "FORD FILED A PATENT
+          FOR THAT BY THE" up to the cut, so this screen completes the line instead of repeating it. Line 23's window ends
+          at 110.40 exactly when line 24's "I" takes the same top-centre slot. Mode "screen", colour void (black letters
+          on the bone screen), as for the rest of the screen's text. */}
+      <LyricBlock line={23} time={t} rows={[[8]]} align="center" anchor="top" mode="screen"
         color={S.void} fog={false} size={3.3} position={[0, SCR_Y + SCR_H / 2 - 3.2, SCR_Z + 0.15]} renderOrder={5} />
       <LyricBlock line={24} time={t} rows={[[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10]]} align="center" anchor="top" mode="dark"
         fog={false} size={3.3} position={[0, SCR_Y + SCR_H / 2 - 3.2, SCR_Z + 0.15]} renderOrder={5} />
