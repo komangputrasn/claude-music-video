@@ -131,8 +131,10 @@ ${GLSL_ATMOS_FOG}
 void main() {
   vec2 p = vUv * 2.0 - 1.0;
   float r = length(p);
-  float ring = exp(-pow((r - 0.7) / 0.07, 2.0)) * (1.0 - vT) * (1.0 - vT) * (0.6 + 0.4 * sin(atan(p.y, p.x) * 7.0 + vT * 3.0));
-  float fleck = exp(-r * r * 60.0) * pow(1.0 - vT, 5.0) * 2.0;
+  // no pow() on a possibly negative base (undefined in GLSL; NaN under ANGLE/D3D11 -> bloom blacks the frame)
+  float dr = (r - 0.7) / 0.07;
+  float ring = exp(-dr * dr) * (1.0 - vT) * (1.0 - vT) * (0.6 + 0.4 * sin(atan(p.y, p.x) * 7.0 + vT * 3.0));
+  float fleck = exp(-r * r * 60.0) * pow(max(1.0 - vT, 0.0), 5.0) * 2.0;
   float m = (ring * 0.35 + fleck) * vA * (1.0 - smoothstep(0.92, 1.0, r));
   gl_FragColor = vec4(uColor * m * uIntensity * (1.0 - atmosFogAmount()), 1.0);
 }`;

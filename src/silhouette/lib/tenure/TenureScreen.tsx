@@ -323,7 +323,9 @@ void main() {
   vec3 c = texture2D(uMap, vUv).rgb;
   float g = tPixelGrid(vUv * uCells, uGrid) * tScan(vUv.y * uCells.y, uScan);
   // slow refresh band rolling down the panel
-  float band = 1.0 + 0.06 * exp(-pow((fract(vUv.y + uTime * 0.11) - 0.5) * 8.0, 2.0));
+  // squared explicitly: pow() of a negative base is undefined in GLSL (NaN under ANGLE/D3D11)
+  float bd = (fract(vUv.y + uTime * 0.11) - 0.5) * 8.0;
+  float band = 1.0 + 0.06 * exp(-bd * bd);
   vec2 q = vUv - 0.5;
   float fall = 1.0 - 0.22 * dot(q, q) * 2.0;
   float fl = 1.0;

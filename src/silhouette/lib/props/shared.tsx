@@ -191,8 +191,10 @@ void main() {
     a = 1.0 - smoothstep(1.0 - uSoft, 1.0, r);
     a *= mix(1.0, 1.0 - r * 0.6, 0.6);
   } else {
-    // wedge: starts uNear wide at the source edge, uFar wide at the far edge; brightest at the source
-    float k = p.y * 0.5 + 0.5;
+    // wedge: starts uNear wide at the source edge, uFar wide at the far edge; brightest at the source.
+    // Clamp: the interpolated uv can land a hair past 1 at the far edge, and pow() of a negative base is NaN
+    // (ANGLE/D3D11 compiles pow as exp2(y*log2(x))); one NaN pixel is smeared by bloom over the whole frame -> black.
+    float k = clamp(p.y * 0.5 + 0.5, 0.0, 1.0);
     float hw = mix(uNear, uFar, k);
     float e = abs(p.x) / max(hw, 1e-3);
     a = (1.0 - smoothstep(1.0 - uSoft, 1.0, e)) * pow(1.0 - k, 1.6) * smoothstep(0.0, 0.04, k);
@@ -301,7 +303,9 @@ varying float vH;
 void main() {
   float ndv = abs(dot(normalize(vN), normalize(vV)));
   float edge = pow(ndv, uEdge);
-  float ax = pow(vK, uFall) * (1.0 - smoothstep(0.9, 1.0, vK));
+  // clamp: the interpolated uv.y can dip a hair below 0 at the far end; pow(negative) = NaN -> bloom blacks the frame
+  float k = clamp(vK, 0.0, 1.0);
+  float ax = pow(k, uFall) * (1.0 - smoothstep(0.9, 1.0, k));
   float a = edge * ax;
   // floor fade: where the cone dips below the floor the floor clips it along a hard curve — fade to 0 at floor height
   if (uFloorOn > 0.5) a *= smoothstep(0.0, uFloorSoft, vH);

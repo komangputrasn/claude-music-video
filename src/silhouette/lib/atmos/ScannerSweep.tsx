@@ -99,7 +99,8 @@ void main() {
   float ld = sign(uLead);
   float trail = 0.15 + 0.85 * pow(clamp(vA * ld + 0.5, 0.0, 1.0), 1.2);
   float leadK = mix(1.0, trail, abs(uLead));
-  float rad = smoothstep(0.0, 0.03, vR) * pow(1.0 - vR, uFalloff);
+  // max(): the interpolated vR can land a hair past 1 at the far edge; pow(negative) = NaN, which bloom smears to black
+  float rad = smoothstep(0.0, 0.03, vR) * pow(max(1.0 - vR, 0.0), uFalloff);
   float facing = abs(dot(normalize(vN), normalize(vV)));
   float sheet = mix(1.0, 1.0 / max(facing, 0.3), 0.5);
   float st = texture2D(uNoise, vec2(vA * uSpan * 6.0, vR * uLength * 0.08 - uTime * 0.15)).g;
@@ -110,7 +111,7 @@ void main() {
   float dLead = abs(vA * ld - 0.5);
   float dl = mix(dEdge, dLead, step(0.5, abs(uLead))) / fw;
   float line = exp(-dl * dl * 0.35) + exp(-dl * 0.22) * 0.18;
-  float lineRad = smoothstep(0.0, 0.015, vR) * pow(1.0 - vR, uFalloff * 0.55);
+  float lineRad = smoothstep(0.0, 0.015, vR) * pow(max(1.0 - vR, 0.0), uFalloff * 0.55);
   float gf = uGroundFade > 0.0 ? smoothstep(uGround, uGround + uGroundFade, vWY) : 1.0;
   vec3 col = uColor * (fill * gf + line * lineRad * uEdge * 1.4 * mix(1.0, gf, 0.6));
   gl_FragColor = vec4(col, 1.0);
