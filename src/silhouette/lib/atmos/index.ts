@@ -1,0 +1,21 @@
+// atmos — atmosphere and light for the TERMS silhouette cut (DESIGN-silhouette §2.3). API reference: ./INDEX.md
+export {Backlight} from './Backlight';
+export type {BacklightProps, BacklightShape} from './Backlight';
+export {FogLayers} from './FogLayers';
+export type {FogLayersProps} from './FogLayers';
+export {LightShaft} from './LightShaft';
+export type {LightShaftProps} from './LightShaft';
+export {ScannerSweep, ScanLine} from './ScannerSweep';
+export type {ScannerSweepProps, ScanLineProps} from './ScannerSweep';
+export {BlindsLight, BlindShafts} from './BlindsLight';
+export type {BlindsLightProps, BlindShaftsProps} from './BlindsLight';
+export {SilRain} from './SilRain';
+export type {SilRainProps} from './SilRain';
+export {WetGround} from './WetGround';
+export type {WetGroundProps} from './WetGround';
+export {Motes} from './Motes';
+export type {MotesProps} from './Motes';
+export {LightPool} from './LightPool';
+export type {LightPoolProps} from './LightPool';
+export {atmosNoise, GLSL_ATMOS_FOG, GLSL_BILLBOARD} from './shared';
+export type {AtmosBlend} from './shared';
