@@ -5,6 +5,10 @@
 //   node scripts/still.mjs scene <SceneId> [--frames=0,60,120] [--times=13.2,20] [--n=9] [--scale=0.5] [--no-overlays] [--cols=3]
 //   node scripts/still.mjs play <PlaygroundName> [--frames=...] [--n=6]      (src/playground/<Name>.tsx, default export)
 //   node scripts/still.mjs main [--times=...] [--frames=...]                  (whole video, absolute frames)
+//   TERMS (dystopian silhouette cut, DESIGN-silhouette.md):
+//   node scripts/still.mjs sil <SceneId> [--frames=..|--times=..|--n=9] [--no-overlays]   (src/silhouette/scenes/<Id>)
+//   node scripts/still.mjs silplay <Name> [--frames=...]                  (src/silhouette/playground/<Name>.tsx)
+//   node scripts/still.mjs silmain [--times=...] [--frames=...]           (whole MainSilhouette composition)
 //
 // Scene frames are LOCAL to the scene (0 = first frame of the scene). --times are song-absolute seconds.
 // Each preview bundles ONLY the requested scene/playground, so a broken file elsewhere does not break you.
@@ -20,16 +24,22 @@ import {fileURLToPath} from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const mode = args[0];
-const name = mode === 'main' ? 'Main' : args[1];
+const name = mode === 'main' ? 'Main' : mode === 'silmain' ? 'MainSilhouette' : args[1];
 const opt = Object.fromEntries(args.filter((a) => a.startsWith('--')).map((a) => {
   const [k, v] = a.replace(/^--/, '').split('=');
   return [k, v ?? true];
 }));
-if (!['scene', 'play', 'main'].includes(mode) || !name) {
-  console.error('usage: node scripts/still.mjs scene <SceneId> | play <Name> | main  [--frames=a,b] [--times=s,t] [--n=9] [--scale=0.5] [--no-overlays]');
+if (!['scene', 'play', 'main', 'sil', 'silplay', 'silmain'].includes(mode) || !name) {
+  console.error('usage: node scripts/still.mjs scene <SceneId> | play <Name> | main | sil <SceneId> | silplay <Name> | silmain  [--frames=a,b] [--times=s,t] [--n=9] [--scale=0.5] [--no-overlays]');
   process.exit(2);
 }
 const FPS = 30;
+// Browser + GL: on machines where Remotion cannot download its headless shell (e.g. sandboxed cloud boxes), point it at a
+// local Chromium with STILL_BROWSER=/path/to/chrome (auto-detects /opt/pw-browsers/chromium). STILL_GL overrides the GL
+// backend (default 'angle'; use 'swangle' on machines without a GPU).
+const AUTO_BROWSER = existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : null;
+const BROWSER = process.env.STILL_BROWSER || AUTO_BROWSER;
+const GL = process.env.STILL_GL || (!process.env.STILL_BROWSER && AUTO_BROWSER ? 'swangle' : 'angle');
 const scale = Number(opt.scale ?? 0.5);
 const overlays = !opt['no-overlays'];
 
@@ -65,6 +75,38 @@ import {registerRoot, Composition} from 'remotion';
 import C from '../../src/playground/${name}';
 registerRoot(() => <Composition id="P" component={C} durationInFrames={${duration}} fps={30} width={1920} height={1080} />);
 `;
+} else if (mode === 'sil') {
+  const s = scenes.find((x) => x.id === name);
+  if (!s) { console.error(`Unknown scene ${name}. Known: ${scenes.map((x) => x.id).join(', ')}`); process.exit(2); }
+  if (!existsSync(join(ROOT, `src/silhouette/scenes/${name}/index.tsx`))) { console.error(`missing src/silhouette/scenes/${name}/index.tsx`); process.exit(2); }
+  key = `sil-${name}${overlays ? '' : '-raw'}`;
+  from = s.from; duration = s.to - s.from;
+  entry = `import React from 'react';
+import {registerRoot, Composition} from 'remotion';
+import {Layout} from '../../src/Layout';
+import {${name}} from '../../src/silhouette/scenes/${name}';
+const P: React.FC = () => <Layout scenes={{${name}}} overlays={${overlays ? "'silhouette'" : 'false'}} />;
+registerRoot(() => <Composition id="P" component={P} durationInFrames={6600} fps={30} width={1920} height={1080} />);
+`;
+} else if (mode === 'silplay') {
+  const file = join(ROOT, `src/silhouette/playground/${name}.tsx`);
+  if (!existsSync(file)) { console.error(`missing ${file}`); process.exit(2); }
+  key = `silplay-${name}`;
+  const m = readFileSync(file, 'utf8').match(/export const duration\s*=\s*(\d+)/);
+  duration = m ? +m[1] : 300;
+  entry = `import React from 'react';
+import {registerRoot, Composition} from 'remotion';
+import C from '../../src/silhouette/playground/${name}';
+registerRoot(() => <Composition id="P" component={C} durationInFrames={${duration}} fps={30} width={1920} height={1080} />);
+`;
+} else if (mode === 'silmain') {
+  key = 'silmain';
+  duration = 6600;
+  entry = `import React from 'react';
+import {registerRoot, Composition} from 'remotion';
+import {RemotionRoot} from '../../src/Root';
+registerRoot(RemotionRoot);
+`;
 } else {
   key = 'main';
   duration = 6600;
@@ -79,14 +121,15 @@ writeFileSync(entryFile, entry);
 
 // ---- frames (absolute within the composition)
 let frames;
-if (opt.frames) frames = String(opt.frames).split(',').map(Number).map((f) => f + (mode === 'scene' ? from : 0));
+const sceneMode = mode === 'scene' || mode === 'sil';
+if (opt.frames) frames = String(opt.frames).split(',').map(Number).map((f) => f + (sceneMode ? from : 0));
 else if (opt.times) frames = String(opt.times).split(',').map(Number).map((t) => Math.round(t * FPS));
 else {
   const n = Number(opt.n ?? 9);
   frames = Array.from({length: n}, (_, i) => from + Math.round(((i + 0.5) / n) * duration));
 }
-const maxF = mode === 'scene' ? from + duration - 1 : duration - 1;
-frames = frames.map((f) => Math.max(mode === 'scene' ? from : 0, Math.min(maxF, f)));
+const maxF = sceneMode ? from + duration - 1 : duration - 1;
+frames = frames.map((f) => Math.max(sceneMode ? from : 0, Math.min(maxF, f)));
 
 // ---- concurrency slots (keeps the machine from drowning when several previews run at once)
 const SLOTS = Number(process.env.PREVIEW_SLOTS || 3);
@@ -134,16 +177,16 @@ const logs = [];
 let browser;
 let failed = 0;
 try {
-  browser = await openBrowser('chrome', {chromiumOptions: {gl: 'angle'}});
-  const comp = await selectComposition({serveUrl, id: mode === 'main' ? 'Main' : 'P', puppeteerInstance: browser, chromiumOptions: {gl: 'angle'},
+  browser = await openBrowser('chrome', {chromiumOptions: {gl: GL}, ...(BROWSER ? {browserExecutable: BROWSER} : {})});
+  const comp = await selectComposition({serveUrl, id: mode === 'main' ? 'Main' : mode === 'silmain' ? 'MainSilhouette' : 'P', puppeteerInstance: browser, chromiumOptions: {gl: GL},
     onBrowserLog: (l) => logs.push(l)});
   for (const f of frames) {
     const file = join(outDir, `f${String(f).padStart(5, '0')}.jpg`);
     try {
       await renderStill({composition: comp, serveUrl, frame: f, output: file, imageFormat: 'jpeg', jpegQuality: 88, scale,
-        puppeteerInstance: browser, chromiumOptions: {gl: 'angle'}, timeoutInMilliseconds: 90_000, overwrite: true,
+        puppeteerInstance: browser, chromiumOptions: {gl: GL}, timeoutInMilliseconds: 90_000, overwrite: true,
         onBrowserLog: (l) => logs.push({...l, frame: f})});
-      const local = mode === 'scene' ? ` (scene-local ${f - from})` : '';
+      const local = sceneMode ? ` (scene-local ${f - from})` : '';
       console.log(`frame ${f}${local}  t=${(f / FPS).toFixed(2)}s  -> ${file}`);
     } catch (e) {
       failed++;
