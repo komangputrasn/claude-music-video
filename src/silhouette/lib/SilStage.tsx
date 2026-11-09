@@ -11,7 +11,8 @@
  *
  * Defaults: bloom {strength 0.85, radius 0.6, threshold 0.86}, lens {aberration 0.0007, vignette 0.55, grain 0.075,
  * scanlines 0, saturation 0.92}. Pass `bloom`/`lens` objects to override individual keys (merged with the defaults).
- * Long lenses: use fov 18–35 (CameraRig fov). The visible picture is letterboxed to 2.39:1 by the overlays (see
+ * Camera far defaults to 3000 m (city wides). For shots that are ALL far away (cranes over the city) raise `near`
+ * (e.g. 1–5 m) to keep depth precision. Long lenses: use fov 18–35 (CameraRig fov). The visible picture is letterboxed to 2.39:1 by the overlays (see
  * LETTERBOX / cameraFovForVisible in ./palette).
  */
 import React from 'react';
@@ -43,7 +44,7 @@ export const SilStage: React.FC<SilStageProps> = ({
     fog={fog}
     bloom={bloom === false ? false : {...SIL_BLOOM, ...(bloom ?? {})}}
     lens={lens === false ? false : {...SIL_LENS, ...(lens ?? {})}}
-    camera={{fov: 28, near: 0.1, far: 800, ...(camera ?? {})}}
+    camera={{fov: 28, near: 0.1, far: 3000, ...(camera ?? {})}}
     exposure={exposure}
     style={style}
   >

@@ -1,12 +1,12 @@
 // Sets look-dev: one cinematic shot per set component (src/silhouette/lib/sets), 30 frames each, staged as real shots
 // (SilStage, fog, backlight, long lens, letterbox, tiny silhouettes for scale).
-//   node scripts/still.mjs silplay Sets --frames=15,45,75,105,135,165,195,225,255,285,315,345,375,405,435,465
+//   node scripts/still.mjs silplay Sets --frames=15,45,75,105,135,165,195,225,255,285,315,345,375,405,421,435,448,465
 //   shot  frames    what
 //   0     0–29      CellRoom: through the blinds from the deck, he rises with the bed, red scan through the slats
 //   1     30–59     CellRoom: symmetrical diorama wide (front wall off), bed up, printer page halted + error
 //   2     60–89     CellRoom: bed profile — the back-board lifts him upright, slit light behind
-//   3     90–119    CellRoom: feeder wide from floor level, door cracked, Pancake in profile
-//   4     120–149   CellRoom: the hammer wall — pegs across the vertical light slit
+//   3     90–119    CellRoom: feeder wide from floor level — props <Monolith> at CELL_SPOTS.feeder, Pancake beside it
+//   4     120–149   CellRoom: the hammer wall — props <HungSilHammer> on the cell's pegs across the vertical light slit
 //   5     150–179   CellRoom: the window from outside — deck-access facade, a figure on the deck
 //   6     180–209   CellRoom: from inside toward the window — he climbs in, backlit by the city
 //   7     210–239   CellRoom: the printer slab from above — red slit, page halted half out
@@ -16,7 +16,7 @@
 //   11    330–359   HouseCube: Chorus1 — the cube in a red laser cage, low and monumental
 //   12    360–389   HouseCube: V2Rain — the door and its iris lock, him in front of it
 //   13    390–419   HouseCube: Outro — dawn gold, warm window, man + dog on the step, the bowl
-//   14    420–449   Corridor: gates closing in sequence toward the far light, him walking in
+//   14    420–449   Corridor: gates closing in sequence toward the far light, him walking in (421 open, 448 shut)
 //   15    450–479   HouseCube: windowOpen — he climbs in through the left window (sill 1.0 m, 0.2 m skin)
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
@@ -29,6 +29,7 @@ import {guyIdle, guySleepyWake, guyClimb, guyWalk} from '../../lib/characters/Gu
 import {pancakeIdle, pancakeSad} from '../../lib/characters/Pancake';
 import {ramp} from '../../lib/time';
 import {Backlight, LightPool} from '../lib/atmos';
+import {Monolith, HungSilHammer} from '../lib/props';
 import {
   CellRoom, CELL_SPOTS, CELL_CAMERAS, cellBedTilt, Megablock, CityGrid, Plaza, PLAZA_SPOTS, PLAZA_CAMERAS, HouseCube,
   HOUSE_SPOTS, HOUSE_CAMERAS, Corridor, CORRIDOR_SPOTS, CORRIDOR_CAMERAS,
@@ -42,18 +43,6 @@ type V3 = [number, number, number];
 const cam = (c: {position: V3; target: V3; fov: number}) => <CameraRig position={c.position} target={c.target} fov={c.fov} />;
 const NOWAG = {tailWagAmount: 0};
 const rimTop = {color: S.bone, strength: 0.7, power: 6, dir: [0, 1] as [number, number]};
-
-/** stand-in feeder monolith (the real one lives in the props module): its face is local +Z, faintly lit red by its iris */
-const FeederStandIn: React.FC<{t: number}> = ({t}) => (
-  <group position={CELL_SPOTS.feeder} rotation-y={CELL_SPOTS.feederRotY}>
-    <mesh position={[0, 0.65, 0]}>
-      <boxGeometry args={[0.7, 1.3, 0.5]} />
-      <meshStandardMaterial color={GREYS.g5} roughness={0.7} />
-    </mesh>
-    <Iris position={[0, 0.98, 0.252]} radius={0.13} time={t} />
-    <pointLight position={[0, 0.55, 0.75]} color={S.authRed} intensity={1.6} distance={2.2} decay={2} />
-  </group>
-);
 
 const Ground: React.FC<{color?: string; size?: number}> = ({color = S.void, size = 2000}) => (
   <mesh rotation-x={-Math.PI / 2} position-y={-0.02}>
@@ -109,8 +98,9 @@ const Shot: React.FC<{i: number; f: number; t: number}> = ({i, f, t}) => {
       return (
         <CellShot c={c}>
           <CellRoom time={t} hideWalls={c.hideWalls} hide={c.hide} doorIris={false}>
-            <FeederStandIn t={t} />
-            <LightPool position={[0.25, 0, 0.3]} radius={1.0} color={S.authRed} intensity={1.0} haze={1.0} hazeHeight={1.1} />
+            <Monolith time={t} position={CELL_SPOTS.feeder} rotation-y={CELL_SPOTS.feederRotY} />
+            {/* the red haze behind the pair (between them and the left wall) */}
+            <LightPool position={[-0.95, 0, 0.75]} radius={1.1} color={S.authRed} intensity={1.0} haze={1.0} hazeHeight={1.2} />
             <SilPancake position={CELL_SPOTS.pancakeAtFeeder} rotation-y={CELL_SPOTS.pancakeAtFeederRotY} pose={{...pancakeSad(t), ...NOWAG}} />
           </CellRoom>
         </CellShot>
@@ -121,17 +111,8 @@ const Shot: React.FC<{i: number; f: number; t: number}> = ({i, f, t}) => {
       return (
         <CellShot c={c}>
           <CellRoom time={t} hideWalls={c.hideWalls} hide={c.hide}>
-            {/* stand-in hammer: handle along +Z, head toward +Z */}
-            <group position={CELL_SPOTS.hammerHook}>
-              <mesh position={[0, 0.014, 0.05]} rotation-x={Math.PI / 2}>
-                <cylinderGeometry args={[0.014, 0.014, 0.34, 10]} />
-                <meshBasicMaterial color={S.void} />
-              </mesh>
-              <mesh position={[0, 0.03, 0.22]}>
-                <boxGeometry args={[0.03, 0.16, 0.04]} />
-                <meshBasicMaterial color={S.void} />
-              </mesh>
-            </group>
+            {/* the props-module hammer on the cell's own pegs (V2Rain foreshadow warmth) */}
+            <HungSilHammer position={CELL_SPOTS.hungHammer} rotation-y={CELL_SPOTS.hungHammerRotY} head="left" pegs={false} warmth={0.25} />
           </CellRoom>
         </CellShot>
       );
@@ -160,7 +141,7 @@ const Shot: React.FC<{i: number; f: number; t: number}> = ({i, f, t}) => {
       const c = CELL_CAMERAS.printer;
       return (
         <CellShot c={c}>
-          <CellRoom time={t} printerFeed={0.5} printerError={1} hideWalls={c.hideWalls}>
+          <CellRoom time={t} printerFeed={0.5} printerError={1} hideWalls={c.hideWalls} hide={c.hide}>
             <SilGuy position={CELL_SPOTS.guyAtPrinter} rotation-y={CELL_SPOTS.guyAtPrinterRotY} pose={guyIdle(t)} />
           </CellRoom>
         </CellShot>
@@ -170,13 +151,14 @@ const Shot: React.FC<{i: number; f: number; t: number}> = ({i, f, t}) => {
     case 8:
       return (
         <SilStage fog={{color: S.ash, near: 60, far: 520}}>
-          <CameraRig position={[0, 1.6, 190]} target={[0, 47, 0]} fov={cameraFovForVisible(30)} />
+          <CameraRig position={[0, 0.5, 190]} target={[0, 47, 0]} fov={cameraFovForVisible(30)} />
           <Ground />
           <Backlight position={[0, 30, -220]} size={[520, 240]} shape="radial" softness={1} intensity={0.9} time={t} />
           <Megablock w={34} h={88} d={24} seed={3} litFraction={0.04} />
           <Megablock w={30} h={130} d={26} seed={7} position={[-84, 0, -120]} litFraction={0.02} />
           <Megablock w={30} h={130} d={26} seed={9} position={[84, 0, -120]} litFraction={0.02} />
-          <SilGuy position={[0, 0, 4]} rotation-y={Math.PI} pose={guyWalk(t)} />
+          {/* in a gap between the pilotis, against the light passing under the tower */}
+          <SilGuy position={[-6.8, 0, 14]} rotation-y={Math.PI} pose={guyWalk(t)} />
         </SilStage>
       );
     // ------------------------------------------------------------------ 9 CityGrid crane + one warm window
@@ -224,7 +206,8 @@ const Shot: React.FC<{i: number; f: number; t: number}> = ({i, f, t}) => {
           <Ground color={GREYS.g1} />
           <Backlight position={[0, 6, -40]} size={[110, 40]} shape="radial" softness={1} intensity={0.55} time={t} />
           <HouseCube time={t} laserCage={0.55 + u * 0.45} />
-          <SilGuy position={[1.2, 0, 6.6]} rotation-y={Math.PI} pose={guyIdle(t)} />
+          {/* outside the cage, against the haze (in front of the black cube he would vanish) */}
+          <SilGuy position={[7.5, 0, 8]} rotation-y={Math.PI + 0.75} pose={guyIdle(t)} />
         </SilStage>
       );
     }

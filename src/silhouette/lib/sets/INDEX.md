@@ -11,7 +11,7 @@ import {
   CellRoom, CELL, CELL_SPOTS, CELL_CAMERAS, cellBedTilt, cellBedHead, cellHeadPoint, cellPillow, cellPrinterPage,
   Megablock, megablockLayout, megablockPane, CityGrid, cityGridLayout,
   Plaza, PLAZA_SPOTS, PLAZA_CAMERAS, plazaSpots,
-  HouseCube, HOUSE_SPOTS, HOUSE_CAMERAS, houseSpots,
+  HouseCube, HOUSE_SPOTS, HOUSE_CAMERAS, houseSpots, HOUSE_MIN_SIZE,
   Corridor, CORRIDOR_SPOTS, CORRIDOR_CAMERAS, corridorLayout,
   LaserLines,                                   // red laser ribbons (cages, gate strips): reusable
   useConcreteMat, concreteMat, concreteTex, floorTex, stencilTex, wbox,   // building blocks for your own architecture
@@ -73,7 +73,10 @@ entry is `{position, target, fov}` with the fov already corrected for the 2.39:1
 - **Hammer.** Two pegs, 0.24 m apart, sit across a vertical light slit (`slit` 0..1).
   - `CELL_SPOTS.hammerHook` is the rest point on top of the pegs, using the Y2K `<HungHammer>` convention: handle along
     +Z, head toward +Z, claw up, wall on −X, `hammerRotY` 0.
-  - A props-module hammer built to that convention drops in at `position={CELL_SPOTS.hammerHook}`.
+  - `CELL_SPOTS.hungHammer` is the same rest for the props-module `<HungSilHammer>` wall frame (origin = the wall surface
+    between the pegs at their top, wall normal = its local +Z). It rests on the cell's own pegs (verified in f135):
+    `<HungSilHammer position={CELL_SPOTS.hungHammer} rotation-y={CELL_SPOTS.hungHammerRotY} head="left" pegs={false}/>`.
+    (Do not put the wall-frame hammer at `hammerHook`: it would float 7.5 cm off the wall with a second pair of pegs.)
 - **Vent.** A grille in the ceiling with a faint red glow deep inside (`vent`). `CELL_SPOTS.vent` is the grille centre,
   where the e-reader ash is pulled to.
 - **Outside.**
@@ -81,7 +84,8 @@ entry is `{position, target, fov}` with the fov already corrected for the 2.39:1
     to the centre screen.
   - `facade`: a deck-access block facade around the window, with other cells every 4.2 m and floors every 3 m. Their
     windows are instanced slatted panes, about 12 % faintly lit. Access decks with 1.1 m parapets sit at every floor; the
-    deck at y = 0 is where the climb happens.
+    deck at y = 0 is where the climb happens. The cell's own front wall is drawn with the facade material on its outer
+    face, so from outside it continues the facade without a darker patch around our window.
 - **Practicals.** Five point lights in a constant count: window fill, red vent, red printer slit, red door iris and
   bone slit. `practicals` scales all five (0 switches them off) and `hide={['lights']}` removes them. `ambient` is the
   self-light of the concrete.
@@ -100,13 +104,14 @@ entry is `{position, target, fov}` with the fov already corrected for the 2.39:1
 | `windowOutside` | [0, 0, 3.6] | standing on the deck outside |
 | `door`, `doorInside`, `doorOutside` | [−1.8, 0, 1.15], … | |
 | `doorIris` (+`doorIrisRotY` π/2) | [−1.794, 1.36, 1.15] | the iris lock on the closed door's inner face |
-| `hammerHook` (+`hammerRotY` 0, `hammerWallNormal` [1,0,0]) | [−1.725, 1.55, −0.9] | HungHammer origin; `hammerPegs` gives the two peg centres |
+| `hammerHook` (+`hammerRotY` 0, `hammerWallNormal` [1,0,0]) | [−1.725, 1.55, −0.9] | Y2K HungHammer origin (rest point on the pegs); `hammerPegs` gives the two peg centres |
+| `hungHammer` (+`hungHammerRotY` π/2) | [−1.8, 1.55, −0.9] | props `<HungSilHammer head="left" pegs={false}>` origin (wall surface between the pegs) |
 | `guyAtHammer` (+`RotY` −π/2) | [−1.05, 0, −0.8] | facing the hammer wall |
 | `slit` | [−1.8, 1.35, −0.9] | centre of the light slit |
 | `printer`, `printerSlit` (+`printerRotY` −π/2) | [1.59, 0, −0.9], [1.38, 0.84, −0.9] | |
 | `guyAtPrinter` (+`RotY` 2.6) | [0.96, 0, −0.18] | beside the printer, turned to the slit |
-| `feeder` (+`feederRotY` π/2) | [−0.35, 0, 0.3] | feeder monolith base; its face (prop +Z) turned toward +X |
-| `pancakeAtFeeder` (+`RotY` π+0.3) | [0.62, 0, 0.42] | Pancake small in front of its face, near-profile to `feederWide` |
+| `feeder` (+`feederRotY` π/2) | [−0.35, 0, 0.3] | props `<Monolith>` base; its face (prop +Z) turned toward +X. The Swing fits: `MONOLITH.guySwingSpot` lands the Guy at [0.74, 0, 0.47], hammer peak 2.09 m (ceiling 2.7), clear of the bed |
+| `pancakeAtFeeder` (+`RotY` π+0.35) | [0.16, 0, 1.27] | Pancake BESIDE the box (door side), nose ~0.2 m off its front corner, near-profile to `feederWide`, turned toward it. Not between the box and the camera: the box is only 0.85 m, he must not look bigger than it |
 | `vent` | [0, 2.68, −0.55] | ceiling grille centre |
 
 ### `CELL_CAMERAS` (spread `{position, target, fov}` into `<CameraRig/>`; pass `hideWalls`/`hide` to the CellRoom)
@@ -120,7 +125,7 @@ entry is `{position, target, fov}` with the fov already corrected for the 2.39:1
 | `windowOutside` | monumental: the block's grid of identical cells on their decks, ours in the centre | — |
 | `windowDeck` | closer, from the deck: the parapet in the foreground, the window centred | — |
 | `windowInside` | from behind the bed toward the window: blinds and climber black against the city glow | `hideWalls ['back']` |
-| `printer` | the printer slab from above-left: red slit, page halted | `hideWalls ['left','ceiling']` |
+| `printer` | the printer slab from above-left: red slit, page halted | `hideWalls ['left','ceiling']`, `hide ['door']` |
 
 Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CELL_PEGS`, `CELL_PRINTER`, `CELL_PAGE`,
 `CELL_VENT`, `CELL_FACADE`, `CELL_PILLOW_LOCAL`, `cellBedHead(tilt)` → `{pivot, rotationX}`, `cellHeadPoint(tilt, local)`,
@@ -184,6 +189,8 @@ Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CEL
   a soft pool under each (decals, not real lights).
 - **Spill.** `spill` is the screen's light on the paving in front of the stair, which is the bright floor a crossing
   figure is silhouetted against. Use `spillColor={S.authRed}` for the red-lit plaza (Pre).
+- **Size.** The stair sits a fixed 34 m in from the −Z edge and the crossing 30 m in front of it, so keep `size` at or
+  above about [120, 120]; smaller plazas push the stair and the walks past the centre.
 - **No three.js lights.** The plaza brings none. Light it more from the scene (screens, `Backlight`, `LightShaft`).
 - **`PLAZA_SPOTS`** (for other sizes use `plazaSpots(size)`):
   - `stairZ` (−66) is the first riser, and `podiumZ` / `podiumY` (1.26) describe the podium.
@@ -208,8 +215,9 @@ Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CEL
            facadeLight?={0} laserCage?={0} cagePulse?={0.6} stencil?="UNIT 0315 · LEASED" {...group}/>
 ```
 - **Facade.** The origin is the base centre and the front face (+Z) is at z = size/2.
-  - The door is a deep-reveal opening in the centre, 1.2 × 2.5 above the step. Its slab slides into the wall with
-    `doorOpen`.
+  - `size` is clamped to ≥ `HOUSE_MIN_SIZE` (7.6): the facade is laid out in metres.
+  - The door is a deep-reveal opening in the centre, 1.2 × 2.5 above the step. Its slab slides into the wall on the +X
+    side with `doorOpen` (the −X side is the carved climb room).
   - The TENURE iris lock is **on the right door-jamb face** (radius 0.16; props pass through `doorIris`).
   - Two flanking windows have a **sill at 1.0 m** above the ground. The **left** one is the guyClimb window: its
     front skin is only 0.2 m thick, which is exactly guyClimb's sill (outer face +0.25, inner face +0.45 from the root).
@@ -222,7 +230,8 @@ Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CEL
   - `interior` with `interiorColor` lights the open doorway. With `windowOpen`, it also lights the room behind the
     climb window, so the climber silhouettes against it. **dawnGold only in Final/Outro**; the figures on the step read
     against it. Its floor spill only shows while `doorOpen` > 0.
-  - `warmWindow` makes the left window dawnGold and spills gold on the ground (**Final/Outro only**).
+  - `warmWindow` makes the left window dawnGold (1.0× plus a 0.2× halo, so it stays gold instead of washing to cream)
+    and spills gold on the ground (**Final/Outro only**).
   - `laserCage` 0..1 builds the red laser lattice around the cube from bottom to top (Chorus1), adding a red ground glow
     and light packets running along the lines (`cagePulse`; it needs `time`).
 - **Lights.** One red point light for the iris spill and one dawnGold point light for the warm window, in a constant
@@ -233,8 +242,9 @@ Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CEL
   - The climb window: `window`, `windowSill` [−2.3, 1.0, 4], and **`climbRoot`** [−2.3, 0, 4.25] (`climbRotY` π) for
     `guyClimb`. `rightWindow` is the twin.
   - The step: `step`.
-  - **`guySeat`** [−0.5, 0, 4.7] is the root for the man sitting on the step: `pose={{…, sit: 1}}`, no y offset.
-  - **`pancakeSeat`** [0.45, 0.37, 4.55] is Pancake sitting on the step.
+  - **`guySeat`** [−0.3, 0, 4.7] is the root for the man sitting on the step: `pose={{…, sit: 1}}`, no y offset.
+  - **`pancakeSeat`** [0.32, 0.37, 4.55] is Pancake sitting on the step. Both sit inside the doorway's width (x ±0.6), so
+    their outlines read against the lit doorway from the `outro` camera (f405).
   - **`bowl`** [0.55, 0, 5.55] is on the ground in front of the step.
   - `guyAtDoor` [0, 0, 5.55] (rotation-y π) faces the door.
   - `cage` is `{half, height}`.
@@ -264,8 +274,11 @@ Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CEL
     Faint armed lines run on the jambs and lintel, and a red floor `threshold` line crosses each gate. A red floor spill
     appears while a gate closes.
   - `labels` stencils GATE 01 … on the leaves.
-- **Pools and lights.** `pools` is a downlight per lintel: a bone strip, a soft floor decal, and **one real point light
-  per gate** (distance 9 m, constant count; `pools={0}` turns them off). These are the corridor's only three.js lights.
+  - A shut gate is a dark slab with its red seam: it cuts off the far light (f421 open → f435/f448 shut).
+- **Pools and lights.** `pools` is a downlight per lintel: a bone strip and a soft floor decal, plus **one real point
+  light per gate** high in the middle of the bay in front of it (intensity 70, distance 9 m, constant count; `pools={0}`
+  turns them off). These are the corridor's only three.js lights. Do not put a light right in front of the leaves: it
+  blows a shut gate out to white, so the gate reads as light and blooms the walker grey.
 - **Anchors.** `corridorLayout(props)` returns `{gateZ[], openW, openH, leafW, spacing, endZ, …}`. `CORRIDOR_SPOTS` is
   the default layout plus `walkStart` and `end`.
 - **`CORRIDOR_CAMERAS`:**
@@ -277,9 +290,12 @@ Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CEL
 
 ## 6. Building blocks (for your own architecture)
 - **`<LaserLines segments={[[a, b, k?], …]} color?={S.authRed} intensity?={1.6} width?={0.02} minPx?={1.6} halo?={3}
-  time? pulse?={0} fog?={0.6}/>`**
+  time? pulse?={0} fog?={0.6} maxHdr?={2}/>`**
   - Hot ribbons, at least `minPx` wide on screen at any distance, drawn in one call.
-  - Endpoints may move every frame. Keep `intensity × k` ≤ 2 for red.
+  - Endpoints may move every frame.
+  - `maxHdr` caps one line's HDR value (intensity × core × k × pulse) at 2, so k > 1 segments and pulses never tone-map to
+    orange. Lines are additive, so crossings still add up at the intersection points. Leave headroom under the cap if
+    you want `pulse` to show (the cage runs at 1.1–1.3).
 - **`useConcreteMat({color, ambient, roughness, kind: 'wall'|'floor', sky})`**
   - A hook giving a per-instance concrete MeshStandardMaterial whose inputs can change every frame.
   - `concreteMat(opts)` is the cached version for **static** values only. Animating its inputs would cache a new
@@ -299,7 +315,7 @@ Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CEL
 
 ## 7. Verified previews
 
-Run `node scripts/still.mjs silplay Sets --frames=15,45,…,465`. The playground is
+Run `node scripts/still.mjs silplay Sets --frames=15,45,75,105,135,165,195,225,255,285,315,345,375,405,421,435,448,465`. The playground is
 `src/silhouette/playground/Sets.tsx`, with one shot per 30 frames. The output is in `.preview/out/silplay-Sets/`, with
 `sheet.jpg` as the contact sheet.
 
@@ -308,18 +324,20 @@ Run `node scripts/still.mjs silplay Sets --frames=15,45,…,465`. The playground
 | `f00015.jpg` | CellRoom `throughBlinds`: bars of window light on the back wall seen through dark slats, red scan bar, he rises with the bed (`bedActive`) |
 | `f00045.jpg` | CellRoom `wide`: symmetrical diorama with the bed up, the striped back wall behind his silhouette, door iris left, printer error right, red vent above |
 | `f00075.jpg` | CellRoom `bedProfile`: the back-board lifting him upright, the slit blade behind his face, red mechanism strip |
-| `f00105.jpg` | CellRoom `feederWide`: stand-in monolith with iris and red pool; Pancake's floppy-eared profile against its red-lit face; door leak line |
-| `f00135.jpg` | CellRoom `hammerWall`: stand-in hammer on the pegs across the vertical light slit |
+| `f00105.jpg` | CellRoom `feederWide`: the props `<Monolith>` at `feeder`, Pancake beside it at `pancakeAtFeeder` in profile against a red `LightPool` haze; door leak line |
+| `f00135.jpg` | CellRoom `hammerWall`: the props `<HungSilHammer>` at `hungHammer` resting on the cell's pegs across the vertical light slit |
 | `f00165.jpg` | CellRoom `windowOutside`: the deck-access block, a grid of identical cells, ours with red scan + stripes |
 | `f00195.jpg` | CellRoom `windowInside`: blinds traversed aside, he climbs in, black against the city glow |
 | `f00225.jpg` | CellRoom `printer`: red slit + error dot, page halted half out, him beside it |
-| `f00255.jpg` | Megablock ×3: open pilotis podiums, fins, rare lit windows against a radial haze |
+| `f00255.jpg` | Megablock ×3 from a low camera: open pilotis podiums, fins, rare lit windows against a radial haze; a tiny figure in a pilotis gap |
 | `f00285.jpg` | CityGrid 16×16 + Megablock `warmWindow`: black city against a pale horizon, one gold window (Final crane) |
 | `f00315.jpg` | Plaza `crossing`: masts and light pools in perspective, axis line, stand-in screen with iris on the podium, tiny figure on the lit paving |
-| `f00345.jpg` | HouseCube `laserCage`: red lattice around the black cube, red ground glow, figure at its foot |
+| `f00345.jpg` | HouseCube `laserCage`: red lattice around the black cube, red ground glow, a figure beside it against the haze |
 | `f00375.jpg` | HouseCube `door`: `facadeLight` 0.35, slatted window glow, iris lock on the jamb, him at the door |
 | `f00405.jpg` | HouseCube `outro`: black cube on gold dawn, warm window, gold doorway, man + dog silhouettes on the step |
-| `f00435.jpg` | Corridor `axial`: gates 4–8 shutting in sequence, red edge strips, lintel pools, him walking toward the far light |
+| `f00421.jpg` | Corridor `axial`, all gates open: red portal frames, the far doorway of light behind him |
+| `f00435.jpg` | Corridor `axial`, gates 4–8 shutting in sequence: gate 4 shut (dark slab, red seam), the far light cut off |
+| `f00448.jpg` | Corridor `axial`, gates 4–8 shut |
 | `f00465.jpg` | HouseCube `window` camera, `windowOpen` + `interior` 0.7: `guyClimb(~0.3)` knee on the 0.2 m sill, silhouetted against the lit room |
 
 ---
@@ -349,8 +367,9 @@ Run `node scripts/still.mjs silplay Sets --frames=15,45,…,465`. The playground
 - **Practicals.** The cell has five point lights, the corridor has one per gate, and the house has two. Their counts
   are constant (toggling never recompiles), but they ARE global three.js lights. Other things within their
   distance (≤ 9 m) are lit too.
-- **Feeder.** Pancake only reads in front of the monolith if its face is lit, by its iris spill or a red point light or
-  `LightPool` at its foot. The black stand-in in f105 needed a red point light.
+- **Feeder.** The props Monolith is only 0.85 m tall (Pancake's head top is 0.75 m): keep Pancake beside it at its front
+  plane (`pancakeAtFeeder`), never between it and the camera, and shoot low (`feederWide`, 0.3 m). Both need a bright
+  backdrop: the box's own red halo plus a red `LightPool` (or a Backlight) between them and the left wall, as in f105.
 
 **Concrete materials**
 - **Static vs animated.** Use `useConcreteMat` in your own components whenever an input animates. `concreteMat` is
@@ -360,7 +379,7 @@ Run `node scripts/still.mjs silplay Sets --frames=15,45,…,465`. The playground
 - **Colour rules.** Gold appears only through `warmWindow` (Megablock, HouseCube) and `interiorColor` (HouseCube), and
   only in Final/Outro. Red appears only on control: the scan, the bed strips, the printer slit, irises, the cage, gate
   strips and the vent.
-- **Red intensity.** All built-in red stays at or below about 2× intensity.
+- **Red intensity.** All built-in red stays at or below about 2× intensity; `LaserLines` enforces it per line (`maxHdr`).
 - **Bloom.** Big glow surfaces stay at or below 0.85 of bone. The cell slit, the corridor lintel strips and the far
   doorway are small and allowed to bloom.
 

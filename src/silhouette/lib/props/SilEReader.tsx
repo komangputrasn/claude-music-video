@@ -219,15 +219,20 @@ export const SilEReader: React.FC<SilEReaderProps> = ({
     for (let i = 0; i < Math.max(1, nF); i++) m.setColorAt(i, new THREE.Color(0, 0, 0));
     return m;
   }, [nF]);
+  // separate cleanups: a new flake count / text must not dispose the (still used) screen or the other mesh
   useLayoutEffect(() => () => {
     wordsMesh.geometry.dispose();
     (wordsMesh.material as THREE.Material).dispose();
     wordsMesh.dispose();
+  }, [wordsMesh]);
+  useLayoutEffect(() => () => {
     (flakeMesh.material as THREE.Material).dispose();
     flakeMesh.dispose();
+  }, [flakeMesh]);
+  useLayoutEffect(() => () => {
     screenMat.dispose();
     screenGeo.dispose();
-  }, [wordsMesh, flakeMesh, screenMat, screenGeo]);
+  }, [screenMat, screenGeo]);
 
   // per-word schedule
   const sched = useMemo(

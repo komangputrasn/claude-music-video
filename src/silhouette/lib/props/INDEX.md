@@ -108,14 +108,15 @@ nose rests on the front face at `x`, wherever `pancakeAnchor(pose, 'nose')` puts
 ```tsx
 <SilHammer warmth?={0} light?={[0.35, 1]} rim?={null} {...group}/>
 <HeldSilHammer warmth? light? slide?={0.05}/>                 // <SilGuy rightHand={…}/>
-<HungSilHammer warmth? light? head?='right'|'left' pegs?={true} {...group}/>
+<HungSilHammer warmth? light? head?='right'|'left' pegs?={true} hook?={false} {...group}/>
 ```
 **The hammer:** the head and claw are a clean silhouette. The **wooden handle is the one never-black object**: its edge
 catches dawnGold.
 - **`warmth`** sets the gold edge:
   - 0 = plain black.
-  - **0.15–0.3** = the faint V2Rain foreshadow, the only gold before the impact.
-  - 0.6–1 = from the Swing on: a bright gold edge that blooms, with the wood core warming to deep amber.
+  - **0.15–0.3** = the faint V2Rain foreshadow, the only gold before the impact: a thin warm line on the lit edge of
+    the handle, the core stays black (`f00052.jpg`, `f00056.jpg`).
+  - 0.6–1 = from the Swing on: a bright gold edge that blooms. Above 0.3 the wood core also warms to a deep amber.
 - **Edge brightness** is capped at about 2.2. Hotter gold tone-maps to cream.
 - **`light`** is the screen-space direction toward the light.
 - The gold handle is `silKeep`, so a parent `<SilGuy>` does not flatten it. At warmth 0 it flattens like any other hand prop.
@@ -126,13 +127,22 @@ catches dawnGold.
   `SIL_HAMMER = {length, headOffset [0,0.262,0], faceOffset [0.066,0.262,0], clawTip, buttY, topY, gripHalf, woodY}`.
 - **`HeldSilHammer`** uses the Y2K `HeldHammer` grip: the handle along grip +Z and the face toward grip −Y.
   `HELD_SIL.hammerHead` is [0, 0, 0.312] and `HELD_SIL.hammerFace` is [0, −0.066, 0.312], both grip-frame points.
-- **`HungSilHammer`**: the origin is the **wall surface point between the two pegs, at the pegs' top**.
-  - The wall is the local XY plane (normal +Z). The pegs stick out 6 cm along +Z.
-  - The handle lies horizontally along X, with the claw **up** and the striking face **down**.
-  - `head='right'` points the head toward +X; `'left'` points it toward −X.
-  - `HUNG_SIL = {pegX [-0.105, 0.075], pegLength 0.06, handleZ 0.034, headCenter}`.
-  - **For other walls, rotate about Y.** A wall facing +X with the head toward +Z (the Y2K bedroom's `hammerHook`
-    convention) is `rotation-y={Math.PI / 2} head="left"`.
+- **`HungSilHammer`** has two frames.
+  - **Default (wall frame, draws its own pegs):** the origin is the **wall surface point between the two pegs, at the
+    pegs' top**. The wall is the local XY plane (normal +Z). The pegs stick out 6 cm along +Z. The handle lies
+    horizontally along X, with the claw **up** and the striking face **down**. `head='right'` points the head toward +X;
+    `'left'` points it toward −X. For other walls, rotate about Y (a wall facing +X with the head toward +Z is
+    `rotation-y={Math.PI / 2} head="left"`, origin still on the wall surface).
+  - **`hook` (for sets that draw their own pegs, e.g. `CellRoom`):** the Y2K `<HungHammer>` frame, so it drops straight
+    onto a `hammerHook` anchor. The origin is the **rest point on top of the pegs**; the handle runs along +Z with the
+    head toward +Z, claw up, face down, wall on −X. No pegs are drawn and `head` is ignored (rotate the group instead).
+    ```tsx
+    <HungSilHammer hook position={CELL_SPOTS.hammerHook} rotation-y={CELL_SPOTS.hammerRotY} warmth={0.25}/>
+    ```
+    Verified on the CellRoom's peg layout in `f00056.jpg`. (The default frame does **not** fit `hammerHook`: its origin
+    is the wall, and it adds a second pair of pegs. For the wall frame in the CellRoom use the set's own wall anchor,
+    `<HungSilHammer position={CELL_SPOTS.hungHammer} rotation-y={CELL_SPOTS.hungHammerRotY} head="left" pegs={false}/>`.)
+  - `HUNG_SIL = {pegX [-0.105, 0.075], pegLength 0.06, handleZ 0.034, headCenter, hookLift 0.012}`.
 
 ## `<PaperBook>` / `<HeldPaperBook>`: the paper 1984
 ```tsx
@@ -182,6 +192,10 @@ it.
 - `irisAt` slides the eye toward the +Z edge.
 - For a pillow propped against a headboard, rotate the group about X (for example `rotation-x={-1.1}`).
 - `PILLOW = {size, top 0.125, irisCenter [0, 0.123, 0.051], irisNormal, irisRadius 0.072}`.
+- **In the `CellRoom` bed:** pass it as `pillowSlot` with `pillow={false}`. The slot origin is the pillow *centre*
+  (`CELL_PILLOW_LOCAL`, 0.075 above the mattress) and the set's pillow is 0.52 × 0.15 × 0.38, so use
+  `pillowSlot={<PillowIris position={[0, -0.075, 0]} scale={0.8} …/>}`. The slot rides the bed tilt, so the eye stays on
+  the pillow as `cellBedTilt(p)` lifts him with `guySleepyWake(p)`.
 
 **Rim:** give the pillow a thin `rim` toward the light (red from above in the dark) so its soft outline reads.
 
@@ -223,8 +237,11 @@ The bowl and Pancake stay pure black against the pool.
   - The first line, if it has no `|`, becomes an inverted title bar.
   - The default is `TENURE PLANS / PILLOW+ … CANCELLED / FEEDER+ / THERMAL / SLEEP+ / NUTRITION`.
 - **`screen = 1.0`** is just under bloom, so the list stays legible.
-- **`halo`** is screen light leaking **around** the phone. It sits behind the lid, so it never veils the screen. This is
-  what makes the phone read at his ear in profile (`f00278.jpg`).
+- **`halo`** is screen light leaking **around** the phone. It sits behind the lid (on the side away from the screen), so
+  it never veils the screen in an insert. At his ear that side faces a profile camera, so the halo glows **over** his
+  black head: that is what makes the phone read at the ear (`f00278.jpg`), but it is the one place a prop veils the
+  silhouette. Keep it at 0.4 or lower there, and set `halo={0}` (and `keys={0}`) in the Hold near-silence, where the
+  pillow's iris must be the only light.
 - **`ext`** is the dim outer display when closed. **`keys`** is a faint keypad backlight.
 
 **Frame:** the same as the Y2K `FlipPhone`. The origin is the grip (the centre of the keypad half), with the keypad toward
@@ -261,7 +278,11 @@ The bowl and Pancake stay pure black against the pool.
 
 **Held modes:**
 - **`mode='read'`** (the default) is for `mergePose(guyHoldUp(0, t), {headPitch: 0.5})`. The fist holds the bottom edge at
-  his chest, the screen faces up toward his face, and the top edge points away from him. Frame it from a high 3/4.
+  his chest, the screen faces up toward his face, and the top edge points away from him.
+  - The page is oriented for **him**: its text-up points away from him, so from a camera in front of him the text reads
+    upside down. For a page insert, look down along the screen normal from above his right shoulder and roll to taste
+    (the playground: `<CameraRig position={[-0.415, 2.069, 0.105]} target={[-0.135, 1.148, 0.375]} roll={-1.335}/>` at
+    `guyHoldUp(0)` + `headPitch 0.55`, `f00306.jpg`). A camera straight over his head is blocked by the hood.
 - **`mode='show'`** is the HeldBook grip: at `guyHoldUp(1)` the screen faces the camera.
 
 ## `<KibbleSparks>`: kibble as falling gold sparks
@@ -286,19 +307,27 @@ The bowl and Pancake stay pure black against the pool.
 All coordinates are in group space. The Monolith uses it with `floorY = 0.02`, so the heap sits on the fallen panels.
 
 ## Helpers (also exported)
-- `<GlowBillboard color intensity size falloff core stretch>` is a camera-facing additive glow. Its origin is the centre.
+- `<GlowBillboard color intensity size falloff core stretch floor floorSoft>` is a camera-facing additive glow. Its origin
+  is the centre.
   - **Place it behind the thing it glows around:** its quad is depth-tested at its centre.
+  - Because of that, a floor beyond the centre's depth cuts a big low glow along a hard line. Pass **`floor`** (the
+    distance from the centre down to the floor) to fade it to zero at floor height over `floorSoft` metres (default 0.35).
+    The Monolith's gold halo uses it.
 - `<FloorGlow shape='radial'|'wedge' size=[w,d] near far softness breakup>` is an additive light decal on the floor.
   - `wedge` starts at the origin and runs toward +Z.
-- `<SoftCone from to radiusStart radiusEnd color intensity edge falloff>` is a cheap light cone drawn from its **back
-  faces only**, so silhouettes inside it stay pure black cut-outs (the same trick as atmos `<LightShaft>`).
+- `<SoftCone from to radiusStart radiusEnd color intensity edge falloff floorY floorSoft>` is a cheap light cone drawn
+  from its **back faces only**, so silhouettes inside it stay pure black cut-outs (the same trick as atmos `<LightShaft>`).
+  Silhouettes *behind* its far wall do get its light.
+  - Pass **`floorY`** (in the from/to space) for any cone that reaches the floor. It fades to zero at floor height over
+    `floorSoft` metres (default 0.25), instead of the floor clipping it along a hard curve. The Monolith's forward cone
+    and the PlainBowl shaft use it.
 - `GRIP` holds the grip-frame rotations of `Held.tsx` (`hammer`, `phone`, `book`).
 
 ---
 
 ## Verified previews
 Playground: `src/silhouette/playground/SilProps.tsx`. Regenerate with
-`node scripts/still.mjs silplay SilProps --frames=15,38,52,66,72,93,101,110,125,148,165,185,200,216,226,236,255,278,292,312,320`.
+`node scripts/still.mjs silplay SilProps --frames=15,38,52,56,66,72,93,101,110,125,148,165,185,200,216,226,236,255,278,292,306,312,320`.
 The images are in `.preview/out/silplay-SilProps/` (`sheet.jpg` plus the files below).
 
 | frame file | what it shows |
@@ -306,11 +335,12 @@ The images are in `.preview/out/silplay-SilProps/` (`sheet.jpg` plus the files b
 | `f00015.jpg` | **V1Feeder:** a low, long-lens shot. The Monolith shows its red iris on the brow, the stencil and the red food slot; Pancake begs beside it, looking up |
 | `f00038.jpg` | **V2Rain:** Pancake's nose rests on the front face under the red eye (`pancakeAtMonolith(pose, -0.12, π − 0.78)`), in profile against haze |
 | `f00052.jpg` | **V2Rain:** `HungSilHammer` on two pegs on a lit wall, with the faint gold handle edge at **warmth 0.25** |
-| `f00066.jpg` | **Swing, side view:** the overhead wind-up (`monolithSwing(0.25)`) |
+| `f00056.jpg` | `HungSilHammer hook` dropped onto the CellRoom's own pegs at `CELL_SPOTS.hammerHook` (wall on −X), warmth 0.25 |
+| `f00066.jpg` | **Swing, side view:** the overhead wind-up (`monolithSwing(0.25)`), hammer at the 0.3 foreshadow until the impact |
 | `f00072.jpg` | **Swing, side view: CONTACT** at `monolithSwing(0.5)`. The striking face lands on the iris (`impactPoint`), with the Guy at `guySwingSpot` |
 | `f00093.jpg` | Impact plus 1 frame: the bone flash and the iris bursting |
 | `f00101.jpg` | Red shards spraying, the gold kibble-spark fountain starting, the front panel falling |
-| `f00110.jpg`, `f00125.jpg` | Gold spill (interior glow, floor wedge, cones), sparks pouring into a heap, the Guy as a pure black silhouette |
+| `f00110.jpg`, `f00125.jpg` | Gold spill (interior glow, floor wedge, cones fading softly into the floor), sparks pouring into a heap. While the hot sparks fly right past him, their bloom lifts the Guy to a dark brown (≈ 10–15 %); he is pure black again once they settle (`f00148`) |
 | `f00148.jpg` | Settled: the hammer resting on the broken brow, the panels on the floor, a glowing kibble heap |
 | `f00165.jpg` | **Aftermath:** a hammer (warmth 1) in one hand and the phone in the other beside the gold-lit broken box; Pancake eats at the heap, tail wagging |
 | `f00185.jpg` / `f00200.jpg` | **Final:** the paper 1984 held up (`guyHoldUp(1)`, hood down), closed (pale rectangle) and open (the brightest white in the frame) |
@@ -318,7 +348,7 @@ The images are in `.preview/out/silplay-SilProps/` (`sheet.jpg` plus the files b
 | `f00255.jpg` | **Final hero:** Pancake eating from the `PlainBowl` in a gold pool |
 | `f00278.jpg` | The phone at the ear, in profile: the screen light leaking around the black phone on the black head |
 | `f00292.jpg` | Phone insert: the open screen with the list "PILLOW+ … CANCELLED" (red control words) |
-| `f00312.jpg` | **V1Feeder:** a close-up of the pale page as words peel off and crumble into ash |
+| `f00306.jpg` / `f00312.jpg` | **V1Feeder:** close-up from above his shoulder, face-on to the pale page (text upright), as the words peel off top to bottom and crumble into ash |
 | `f00320.jpg` | **V1Feeder:** a wide shot of the ash stream rising into a red ceiling vent (`flakeSize` 2.8) |
 
 ## Caveats for scene builders
@@ -330,13 +360,18 @@ The images are in `.preview/out/silplay-SilProps/` (`sheet.jpg` plus the files b
   the brow, so blend to another pose with `mixPose` when he straightens up.
 - **Gold rules:**
   - `spill`, `kibble`, `goldPool` and hammer warmth above 0.3 come **only after the impact (129.2 s)**.
-  - Before the impact the hammer may show only `warmth` ≤ 0.3, and only in V2Rain.
+  - Before the impact the hammer may show only `warmth` ≤ 0.3: the V2Rain foreshadow, which may carry on through the
+    Swing wind-up until the blow lands (the brief allows gold from the Swing scene; the playground does this).
   - `goldPool` is for Final and Outro only.
 - **Rims:** if you give `SilGuy`/`SilPancake` a gold rim in the spill, keep it thin (`strength` ≤ 0.6, `power` ≥ 6).
   Stronger rims light their broad surfaces brown and lose the silhouette.
 - **Additive light and silhouettes:** additive glows in front of a silhouette veil it grey or brown. These props avoid that:
   `SoftCone` draws from its back faces, the Monolith's halo sits behind the box, and the phone's halo sits behind the lid.
-  If you add your own glows, put them **behind** the figures.
+  If you add your own glows, put them **behind** the figures. Two exceptions are real light sources next to a figure and
+  bloom on purpose: the open book (brightness 2.6) lifts his head to about 15 % grey, and the hot kibble sparks do the same
+  while they fly. The phone's halo glows over his head at the ear (see `<SilPhone>`).
+- **Low glows and the floor:** any `GlowBillboard`/`SoftCone` you add whose light reaches the floor needs `floor` /
+  `floorY`, or the floor cuts it along a hard line.
 - **Silhouettes need a bright backdrop.** Put a `<Backlight>` behind every prop (atmos), or it disappears on the black
   floor. The pillow in the Hold dark needs its own thin red rim.
 - **Fine detail versus bloom:**

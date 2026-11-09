@@ -14,12 +14,13 @@
  *
  *   endLight  bone doorway glow at the far end (≤ ~0.85 of bone: under bloom so it doesn't wash the silhouette)
  *   slot      ceiling light slot (bone strip)
- *   pools     downlight under every lintel: a bone strip + a real point light (one per gate, constant count) that
- *             pools light on the floor, ribs and leaves + a soft floor decal
+ *   pools     downlight under every lintel: a bone strip + a soft floor decal, plus one real point light per gate
+ *             (constant count) high in the middle of the bay in front of it, so a SHUT gate stays a dark slab with its
+ *             red seam (a light right in front of the leaves blew them out to white: the closed gate read as light)
  *   red       multiplier of every red strip (authRed ≤ 2 after it)   threshold  red floor line under each gate
  *   labels    stencilled GATE 01 … on the leaves
  * Origin: floor centre of the ENTRANCE (z = 0); the corridor runs toward -Z to z = -length. Lights: one point light per
- * gate (bone, distance-limited to ~7 m) — the only three.js lights it brings; pools={0} switches them off.
+ * gate (bone, distance 9 m, mid-bay under the ceiling) — the only three.js lights it brings; pools={0} switches them off.
  * Anchors: corridorLayout(props) → {gateZ[], openW, openH, endZ, …}, CORRIDOR_SPOTS, CORRIDOR_CAMERAS.
  */
 import React, {useMemo} from 'react';
@@ -218,7 +219,7 @@ export const Corridor: React.FC<CorridorProps> = ({
                 {glowMat(S.authRed, 0.35 * c * red)}
               </mesh>
             ) : null}
-            <pointLight position={[0, height - LINTEL - 0.35, z + 0.9]} color={S.bone} intensity={160 * pools} distance={9} decay={2} />
+            <pointLight position={[0, height - 0.45, z + Math.min(L.spacing / 2, 3.2)]} color={S.bone} intensity={70 * pools} distance={9} decay={2} />
           </group>
         );
       })}

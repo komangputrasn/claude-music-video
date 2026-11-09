@@ -17,7 +17,7 @@ src/silhouette/
     SilStage.tsx           <SilStage>, CameraRig (re-export), SIL_BLOOM, SIL_LENS
     Crowd.tsx              <Crowd> instanced crowds of identical hooded silhouettes, crowdLayout()
     WorldLyric.tsx         <WorldLyric> the lyrics staged INSIDE the world; sceneLyricLines(), metresForPx(), lyricWindow()
-    atmos/  tenure/  sets/  props/    (modules: see §3–§6)
+    atmos/  tenure/  sets/  props/    (modules: see §3; each has its own INDEX.md API reference)
   overlays/SilOverlays.tsx <Letterbox> (the only global overlay), <SilOverlays>; <SilCaptions> = unmounted debug tool
   scenes/<Id>/index.tsx    one folder per scene (named export <Id>), plus NOTES.md shot list
   scenes/index.ts          SIL_SCENES map used by the MainSilhouette composition (src/Root.tsx)
@@ -135,3 +135,30 @@ anchor? color? intensity? from? until? reveal?='word'|'line' halo? fog? opacity?
 
 ### Overlay (already global — scenes never draw it)
 `<Letterbox/>` (138 px bars). No captions: see `<WorldLyric>`.
+
+## 3. Modules (each folder has a full API reference in its own `INDEX.md`, with verified preview frames)
+
+| module | import (from a scene) | what's in it | look test |
+|---|---|---|---|
+| `lib/atmos` | `'../../lib/atmos'` | `Backlight`, `FogLayers`, `LightShaft` (ray-marched volume), `ScannerSweep`, `ScanLine`, `BlindsLight`, `BlindShafts`, `SilRain`, `WetGround` (Reflector), `Motes`, `LightPool` | `silplay Atmos` |
+| `lib/tenure` | `'../../lib/tenure'` | `TenureScreen` (+ presets), `TermsScroll`, `Stencil`, `LeaseTags`, `IrisWall`, `GiantLetters`, `FloatingPrice`, clause/lease-code generators | `silplay Tenure` |
+| `lib/sets` | `'../../lib/sets'` | `CellRoom` (+ `CELL_SPOTS`, `CELL_CAMERAS`, bed tilt synced to `guySleepyWake`), `Megablock`, `CityGrid`, `Plaza`, `HouseCube` (+ `HOUSE_SPOTS`), `Corridor`, `LaserLines`, concrete materials | `silplay Sets` |
+| `lib/props` | `'../../lib/props'` | `Monolith` (feeder: iris, shatter, gold spill, kibble; `monolithSwing`, `pancakeAtMonolith`), `SilHammer`/`HeldSilHammer`/`HungSilHammer`, `PaperBook`/`HeldPaperBook`, `PillowIris`, `PlainBowl`, `SilPhone`/`HeldSilPhone`, `SilEReader`/`HeldSilEReader`, `KibbleSparks` | `silplay SilProps` |
+
+### Hard-won lessons from the module verifiers (read before staging a shot)
+- **Never put haze in front of a hero.** A FogLayers card / additive glow between camera and a silhouette turns it
+  grey. Start fog BEHIND the subject.
+- **Bloom veils silhouettes.** Anything above the bloom threshold directly behind a figure (a Backlight `core`, a
+  window seen down a shaft) spreads grey over it. Keep big surfaces behind figures ≤ ~0.85×bone.
+- **Red stays red only when it's not over-driven and not on bright grey.** HDR red > ~1.5 tone-maps coral/orange; red
+  added on top of bright grey haze desaturates to salmon/pink. For red beams keep intensity ≤ ~1.1 and the haze behind
+  them dim. Get presence from spread (halos, haze), not intensity. Iris rings are soft-capped in `IRIS_GLSL`.
+- **Silhouettes need a bright ground or background.** A black figure on a black floor below the horizon disappears:
+  use low cameras against the backlight, WetGround reflections, LightPools, or a lit wall.
+- **Gold rims must stay thin** (strength ≤ 0.6, power ≥ 6) or the figure reads brown, not black.
+- **City wides:** SilStage far is 3000 m; for all-distant shots raise `near` (1–5 m) for depth precision.
+- **Point lights** in sets are real and global (CellRoom 5, Corridor 1/gate, HouseCube 2): keep the count constant
+  within a shot.
+- **The Monolith (0.85 m) only reads "huge" next to Pancake from a low (0.2–0.35 m) long-lens camera** with Pancake at
+  or behind its front plane; use `pancakeAtMonolith` / `monolithSwing` for the V2Rain nose and the Swing impact.
+- **WetGround** costs an extra scene render: one per shot.

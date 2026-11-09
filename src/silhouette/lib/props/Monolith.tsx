@@ -623,13 +623,14 @@ export const Monolith: React.FC<MonolithProps> = ({
           <mesh geometry={g.card} material={mats.card} renderOrder={3} />
           <FloorGlow position={[0, FOOT + T, 0]} size={[W - 2 * T, D - 2 * T]} color={S.dawnGold} intensity={0.8 * sp} softness={0.5}
             breakup={0.2} />
-          {/* halo sits BEHIND the box: the box occludes it, so it reads as gold haze glowing around the broken outline */}
+          {/* halo sits BEHIND the box: the box occludes it, so it reads as gold haze glowing around the broken outline.
+              `floor` fades it out at floor height (else the floor cuts it with a hard horizontal line behind the box) */}
           <GlowBillboard position={[0, 0.5, -D / 2 - 0.13]} color={S.dawnGold} intensity={0.34 * sp * (0.35 + 0.65 * Math.max(frontOpen, holeOpen))}
-            size={1.2} falloff={1.7} />
+            size={1.2} falloff={1.7} floor={0.5} floorSoft={0.4} />
           <SoftCone from={[0, BROW_Y0 + 0.02, FZ - 0.08]} to={[0, 2.4, 0.32]} radiusStart={0.12} radiusEnd={0.6} color={S.dawnGold}
             intensity={0.3 * sp * holeOpen} edge={1.8} falloff={1.3} />
           <SoftCone from={[0, 0.46, 0.02]} to={[0, -0.12, 1.75]} radiusStart={0.28} radiusEnd={0.95} color={S.dawnGold}
-            intensity={0.2 * sp * frontOpen} edge={1.6} falloff={1.1} />
+            intensity={0.2 * sp * frontOpen} edge={1.6} falloff={1.1} floorY={0} floorSoft={0.3} />
           <FloorGlow shape="wedge" position={MONOLITH.spillFloor} size={[2.1, 2.5]} near={0.3} far={1} color={S.dawnGold}
             intensity={(0.2 + 1.05 * frontOpen) * sp} softness={0.55} breakup={0.4} seed={seed} />
         </group>

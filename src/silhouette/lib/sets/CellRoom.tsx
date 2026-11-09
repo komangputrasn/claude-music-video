@@ -92,18 +92,38 @@ const WALL_FONT = {font: 'futura' as const, weight: 500, tracking: 0.35};
 const T = CELL.wall;
 
 // ------------------------------------------------------------------------------------------------ static geometry
+/** Reorder an indexed geometry's triangles into two material groups: 0 = the rest, 1 = triangles matching `pred`. */
+const splitFaces = (g: THREE.BufferGeometry, pred: (n: THREE.Vector3, c: THREE.Vector3) => boolean) => {
+  const idx = g.index!;
+  const pos = g.attributes.position as THREE.BufferAttribute, nrm = g.attributes.normal as THREE.BufferAttribute;
+  const a: number[] = [], b: number[] = [];
+  const n = new THREE.Vector3(), c = new THREE.Vector3(), v = new THREE.Vector3();
+  for (let i = 0; i < idx.count; i += 3) {
+    const i0 = idx.getX(i), i1 = idx.getX(i + 1), i2 = idx.getX(i + 2);
+    n.fromBufferAttribute(nrm, i0);
+    c.fromBufferAttribute(pos, i0).add(v.fromBufferAttribute(pos, i1)).add(v.fromBufferAttribute(pos, i2)).multiplyScalar(1 / 3);
+    (pred(n, c) ? b : a).push(i0, i1, i2);
+  }
+  g.setIndex([...a, ...b]);
+  g.clearGroups();
+  g.addGroup(0, a.length, 0);
+  g.addGroup(a.length, b.length, 1);
+  return g;
+};
+
 type CellGeo = Record<CellWall | 'floor' | 'facade' | 'deck' | 'printer' | 'bedBase' | 'bedHead' | 'blanket' | 'ventDuct', THREE.BufferGeometry>;
 let _geo: CellGeo | null = null;
 const cellGeometry = (): CellGeo => {
   if (_geo) return _geo;
   const x0 = CELL.xMin, x1 = CELL.xMax, z0 = CELL.zMin, z1 = CELL.zMax, H = CELL.h;
   const tile = WALL_TILE;
-  const front = mergeBoxes([
+  // the front wall's OUTER face (group 1) is drawn with the facade material, so it matches the block facade around it
+  const front = splitFaces(mergeBoxes([
     wboxMinMax([x0 - T, -0.2, z1], [W.x0, H + T, z1 + T], tile),
     wboxMinMax([W.x1, -0.2, z1], [x1 + T, H + T, z1 + T], tile),
     wboxMinMax([W.x0, -0.2, z1], [W.x1, W.sill, z1 + T], tile),
     wboxMinMax([W.x0, W.top, z1], [W.x1, H + T, z1 + T], tile),
-  ]);
+  ]), (n, c) => n.z > 0.5 && c.z > z1 + T - 0.01);
   const back = wboxMinMax([x0 - T, -0.2, z0 - T], [x1 + T, H + T, z0], tile);
   const dz0 = CELL_DOOR.z - CELL_DOOR.width / 2, dz1 = CELL_DOOR.z + CELL_DOOR.width / 2;
   const sz0 = CELL_SLIT.z - CELL_SLIT.width / 2, sz1 = CELL_SLIT.z + CELL_SLIT.width / 2;
@@ -501,7 +521,7 @@ export const CellRoom: React.FC<CellRoomProps> = ({
     <group ref={ref} {...group}>
       {/* ------------------------------------------------ shell */}
       <mesh geometry={G.floor} material={M.floor} />
-      {wallOn('front') ? <mesh geometry={G.front} material={M.wall} /> : null}
+      {wallOn('front') ? <mesh geometry={G.front} material={[M.wall, M.facade]} /> : null}
       {wallOn('back') ? <mesh geometry={G.back} material={M.wall} /> : null}
       {wallOn('left') ? <mesh geometry={G.left} material={M.wall} /> : null}
       {wallOn('right') ? <mesh geometry={G.right} material={M.wall} /> : null}

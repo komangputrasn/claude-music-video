@@ -23,17 +23,22 @@
  * Matches guyHammerSwing(p) / monolithSwing(p). HELD_SIL.hammerHead [0,0,0.312] and HELD_SIL.hammerFace [0,−0.066,0.312]
  * are grip-frame points: world face = new Vector3(...HELD_SIL.hammerFace).applyMatrix4(guyJointMatrix(pose,'gripR',{R:true})).
  *
- * <HungSilHammer>: origin = the WALL SURFACE point midway between the two pegs, at the pegs' top. The wall is the local
- * XY plane (wall normal +Z, pegs stick out 6 cm along +Z), the handle lies horizontally along X on top of the pegs,
- * claw UP, striking face DOWN. head='right' → head toward +X (default), 'left' → head toward −X.
- * Other walls: rotate the group about Y. e.g. a left wall facing +X (the Y2K bedroom's hammerHook) with the head toward
- * +Z = `<HungSilHammer rotation-y={Math.PI / 2} head="left" position={hook}/>`. HUNG_SIL = {pegX, pegLength, handleZ}.
+ * <HungSilHammer> has two frames:
+ *   default (wall frame): origin = the WALL SURFACE point midway between its own two pegs, at the pegs' top. The wall is
+ *     the local XY plane (wall normal +Z, pegs stick out 6 cm along +Z), the handle lies horizontally along X on top of
+ *     the pegs, claw UP, striking face DOWN. head='right' → head toward +X (default), 'left' → head toward −X.
+ *     Other walls: rotate the group about Y (a wall facing +X with the head toward +Z = rotation-y={Math.PI / 2} head="left").
+ *   hook (`hook` prop): the Y2K <HungHammer> / hammerHook convention, for sets that draw their own pegs —
+ *     origin = the REST POINT on top of the pegs (CELL_SPOTS.hammerHook, BEDROOM_SPOTS.hammerHook), handle along +Z with
+ *     the head toward +Z, claw UP, face DOWN, wall on −X; no pegs drawn. `head` is ignored (rotate the group instead).
+ *     <HungSilHammer hook position={CELL_SPOTS.hammerHook} rotation-y={CELL_SPOTS.hammerRotY} warmth={0.25}/>
+ * HUNG_SIL = {pegX, pegLength, handleZ, headCenter, hookLift}.
  */
 import React, {useLayoutEffect, useMemo, useRef} from 'react';
 import * as THREE from 'three';
 import {S} from '../palette';
 import {RimOpts, Silhouette, setSilhouetteUniforms} from '../Silhouette';
-import {GRIP, GroupProps, V3, basisEuler, clamp01, makeRimMat} from './shared';
+import {GRIP, GroupProps, V3, basisEuler, clamp01, makeRimMat, smooth01} from './shared';
 
 const BUTT_Y = -0.07, HEAD_Y = 0.262, TOP_Y = 0.283, TAPE_TOP = 0.056;
 
@@ -136,7 +141,8 @@ export const SilHammer: React.FC<SilHammerProps> = ({warmth = 0, light = [0.35, 
     // re-assert our own material every render (a parent <Silhouette> may have swapped it while warmth was 0)
     if (woodRef.current && w > 0.001) woodRef.current.material = woodMat;
     setSilhouetteUniforms(woodMat, {
-      color: warmCore(w * 0.9),
+      // the core only warms above the foreshadow range: at ≤ 0.3 (V2Rain) the gold is the edge line alone
+      color: warmCore(0.9 * smooth01((w - 0.3) / 0.7)),
       // ≤ ~2.2: hotter gold tone-maps to cream and stops reading as gold
       rim: w > 0.001 ? {color: S.dawnGold, strength: 0.35 + 1.9 * w, power: 4.2, dir: light, dirMix: 0.7} : null,
     });
@@ -179,17 +185,32 @@ export const HUNG_SIL = {
   handleZ: 0.034,
   /** wall-local centre of the hammer head when head='right' */
   headCenter: [HEAD_Y - HUNG_MID, HUNG_LIFT, 0.034] as V3,
+  /** hook frame: height of the handle axis above the rest point (= the Y2K HungHammer lift) */
+  hookLift: 0.012,
 };
 const HUNG_ROT_R = basisEuler([0, -1, 0], [1, 0, 0], [0, 0, 1]); // face down, head +X, claw up
 const HUNG_ROT_L = basisEuler([0, -1, 0], [-1, 0, 0], [0, 0, -1]); // face down, head −X, claw up
 
-export type HungSilHammerProps = SilHammerProps & {head?: 'right' | 'left'; pegs?: boolean};
-/** Grandpa's hammer resting on two wall pegs (origin = wall surface between the pegs, at peg-top height; wall normal +Z). */
-export const HungSilHammer: React.FC<HungSilHammerProps> = ({warmth, light, head = 'right', pegs = true, ...group}) => {
+export type HungSilHammerProps = SilHammerProps & {head?: 'right' | 'left'; pegs?: boolean; hook?: boolean};
+/**
+ * Grandpa's hammer resting on two wall pegs. Default: origin = wall surface between its own pegs, at peg-top height (wall
+ * normal +Z). `hook`: the Y2K HungHammer frame (origin = rest point on the set's pegs, handle along +Z, head +Z, wall −X).
+ */
+export const HungSilHammer: React.FC<HungSilHammerProps> = ({warmth, light, rim, head = 'right', pegs = true, hook = false, ...group}) => {
   const g = hammerGeo();
   const sx = head === 'right' ? 1 : -1;
   const pegMat = useMemo(() => new THREE.MeshBasicMaterial({color: S.void}), []);
   useLayoutEffect(() => () => pegMat.dispose(), [pegMat]);
+  if (hook) {
+    // identical placement to the Y2K <HungHammer>: grip frame (handle +Z, face −Y), the handle's rest point on the origin
+    return (
+      <group {...group}>
+        <group position={[0, HUNG_SIL.hookLift, -HUNG_MID]} rotation={GRIP.hammer}>
+          <SilHammer warmth={warmth} light={light} rim={rim} />
+        </group>
+      </group>
+    );
+  }
   return (
     <group {...group}>
       {pegs
@@ -201,7 +222,7 @@ export const HungSilHammer: React.FC<HungSilHammerProps> = ({warmth, light, head
           ))
         : null}
       <group position={[-HUNG_MID * sx, HUNG_LIFT, HUNG_SIL.handleZ]} rotation={head === 'right' ? HUNG_ROT_R : HUNG_ROT_L}>
-        <SilHammer warmth={warmth} light={light} />
+        <SilHammer warmth={warmth} light={light} rim={rim} />
       </group>
     </group>
   );

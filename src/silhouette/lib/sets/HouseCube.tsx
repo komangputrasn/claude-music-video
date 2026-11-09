@@ -4,8 +4,8 @@
  * (sill 1.0 m above the ground — the LEFT one is the guyClimb window), and a single concrete step the full width of
  * the door bay where the man and the dog sit in the Outro. Lease stencil on the facade.
  *
- *   <HouseCube size?={8} time?={0} color?={GREYS.g3} ambient?={0.06}
- *     doorOpen?={0}               0..1 door slab slides aside into the wall (light beyond if `interior` > 0)
+ *   <HouseCube size?={8 (≥ 7.6)} time?={0} color?={GREYS.g3} ambient?={0.06}
+ *     doorOpen?={0}               0..1 door slab slides aside into the wall on the +X side (light beyond if `interior` > 0)
  *     doorIris?={{…IrisProps}|false}   props for the iris lock on the right door jamb face (radius 0.16; time = `time`)
  *     irisLight?={1}              faint red spill of the iris on the step/jamb (0 = off)
  *     warmWindow?={0}             0..1+ dawnGold glow in the LEFT window + gold spill on the ground (Final/Outro ONLY)
@@ -56,8 +56,13 @@ const DOOR_W = 1.2, DOOR_H = 2.5, REVEAL = 0.6;
 const WIN_W = 1.3, WIN_H = 1.5, SILL = 1.0, WIN_X = 2.3, WIN_REVEAL = 0.12;
 const STEP_H = 0.37, STEP_D = 1.0, STEP_W = 3.2;
 
-/** House anchors for a cube of edge `size` (house-local). */
-export const houseSpots = (size = 8) => {
+/** The facade (door, windows at x ±2.3, the 3 m climb room behind the left one) is laid out in metres: below this edge
+ *  the carved room would poke out of the cube, so `size` is clamped to it. */
+export const HOUSE_MIN_SIZE = 7.6;
+
+/** House anchors for a cube of edge `size` (house-local; clamped to ≥ HOUSE_MIN_SIZE). */
+export const houseSpots = (sizeIn = 8) => {
+  const size = Math.max(HOUSE_MIN_SIZE, sizeIn);
   const f = size / 2;
   return {
     size,
@@ -76,10 +81,11 @@ export const houseSpots = (size = 8) => {
     rightWindow: [WIN_X, SILL + WIN_H / 2, f] as V3,
     /** the front step (top surface centre) — STEP_H = GUY.seatHeight (0.37) so <SilGuy pose={{…, sit: 1}}/> fits */
     step: [0, STEP_H, f + STEP_D / 2] as V3,
-    /** Outro: the man sits on the step (root on the ground, y = 0, facing +Z, pose sit: 1) left of centre */
-    guySeat: [-0.5, 0, f + STEP_D - 0.3] as V3,
-    /** Pancake sits ON the step beside him (root at the step top), facing +Z / three-quarter */
-    pancakeSeat: [0.45, STEP_H, f + 0.55] as V3,
+    /** Outro: the man sits on the step (root on the ground, y = 0, facing +Z, pose sit: 1) just left of centre, so his
+     *  outline sits inside the doorway (x ±0.6) and reads against the light behind it */
+    guySeat: [-0.3, 0, f + STEP_D - 0.3] as V3,
+    /** Pancake sits ON the step beside him (root at the step top), facing +Z / three-quarter, inside the doorway too */
+    pancakeSeat: [0.32, STEP_H, f + 0.55] as V3,
     /** the bowl on the ground in front of the step */
     bowl: [0.55, 0, f + STEP_D + 0.55] as V3,
     /** standing in front of the door, facing it (rotation-y π) */
@@ -186,10 +192,11 @@ const cageSegments = (half: number, height: number, amount: number): LaserSegmen
 };
 
 export const HouseCube: React.FC<HouseCubeProps> = ({
-  size = 8, time = 0, color = GREYS.g3, ambient = 0.06, doorOpen = 0, doorIris = {}, irisLight = 1, warmWindow = 0,
+  size: sizeIn = 8, time = 0, color = GREYS.g3, ambient = 0.06, doorOpen = 0, doorIris = {}, irisLight = 1, warmWindow = 0,
   windowGlow = 0, interior = 0, interiorColor = S.bone, facadeLight = 0, windowOpen = false, laserCage = 0, cagePulse = 0.6, stencil = 'UNIT 0315 · LEASED',
   ...group
 }) => {
+  const size = Math.max(HOUSE_MIN_SIZE, sizeIn);
   const spots = useMemo(() => houseSpots(size), [size]);
   const f = size / 2;
   const geo = houseGeometry(size);
@@ -205,6 +212,7 @@ export const HouseCube: React.FC<HouseCubeProps> = ({
   useLayoutEffect(() => () => stMat?.dispose(), [stMat]);
   const segs = useMemo(() => cageSegments(spots.cage.half, spots.cage.height, laserCage), [spots, laserCage]);
   const irisOn = doorIris !== false;
+  // slides toward +X into the solid wall between the door and the right window (−X is the carved climb room)
   const slide = clamp01(doorOpen) * (DOOR_W + 0.05);
   const ww = Math.max(0, warmWindow);
   const wg = clamp01(windowGlow);
@@ -220,7 +228,7 @@ export const HouseCube: React.FC<HouseCubeProps> = ({
         </mesh>
       ) : null}
       {/* door slab (slides into the wall to the left) + light beyond */}
-      <mesh geometry={UNIT} material={doorMat} position={[-slide, STEP_H + DOOR_H / 2, f - REVEAL]} scale={[DOOR_W, DOOR_H, 0.08]} />
+      <mesh geometry={UNIT} material={doorMat} position={[slide, STEP_H + DOOR_H / 2, f - REVEAL]} scale={[DOOR_W, DOOR_H, 0.08]} />
       {interior > 0.001 && doorOpen > 0.01 ? (
         <>
           <mesh geometry={PLANE} position={[0, STEP_H + DOOR_H / 2, f - REVEAL - 0.05]} scale={[DOOR_W, DOOR_H, 1]}>
@@ -238,7 +246,8 @@ export const HouseCube: React.FC<HouseCubeProps> = ({
       {[-1, 1].map((s) => {
         if (s < 0 && windowOpen) return null;
         const warm = s < 0 ? ww : 0;
-        const col = warm > 0.001 ? hdr(S.dawnGold, 1.35 * warm) : hdr(S.bone, 0.75 * wg);
+        // gold ≤ ~1.2 incl. the halo card on top of it, or ACES washes it to cream
+        const col = warm > 0.001 ? hdr(S.dawnGold, 1.0 * warm) : hdr(S.bone, 0.75 * wg);
         return warm > 0.001 || wg > 0.001 ? (
           <mesh key={s} geometry={PLANE} position={[s * WIN_X, SILL + WIN_H / 2, zIn]} scale={[WIN_W, WIN_H, 1]}>
             <meshBasicMaterial color={col} map={warm > 0.001 ? null : blindsTex()} />
@@ -251,7 +260,7 @@ export const HouseCube: React.FC<HouseCubeProps> = ({
             <meshBasicMaterial map={glowTex()} color={hdr(S.dawnGold, 0.35 * ww)} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
           </mesh>
           <mesh geometry={PLANE} position={[-WIN_X, SILL + WIN_H / 2, f + 0.05]} scale={[WIN_W * 2.6, WIN_H * 2.4, 1]}>
-            <meshBasicMaterial map={glowTex()} color={hdr(S.dawnGold, 0.28 * ww)} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
+            <meshBasicMaterial map={glowTex()} color={hdr(S.dawnGold, 0.2 * ww)} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
           </mesh>
         </>
       ) : null}
@@ -265,7 +274,7 @@ export const HouseCube: React.FC<HouseCubeProps> = ({
       <pointLight position={[-WIN_X, SILL + WIN_H / 2, f + 1.2]} color={S.dawnGold} intensity={2.2 * ww} distance={6} decay={2} />
       {/* laser cage (Chorus1) */}
       {segs.length ? (
-        <LaserLines segments={segs} intensity={1.4 + 0.25 * clamp01(laserCage)} width={0.025} minPx={1.6} time={time} pulse={cagePulse} pulseSpeed={5} pulseSpacing={7} />
+        <LaserLines segments={segs} intensity={1.1 + 0.2 * clamp01(laserCage)} width={0.025} minPx={1.6} time={time} pulse={cagePulse} pulseSpeed={5} pulseSpacing={7} />
       ) : null}
       {segs.length ? (
         <mesh geometry={PLANE} position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[spots.cage.half * 3.6, spots.cage.half * 3.6, 1]}>

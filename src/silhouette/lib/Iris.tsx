@@ -15,6 +15,8 @@
  *   housing    draw the black lens housing disc behind the rings (needed on bright backgrounds).
  *   flicker    0..1 failure flicker (Final scene: the red screens fail). Deterministic from `time`.
  *   glint      small bone-white specular dot in the pupil (makes it read as an eye/lens).
+ *   glow       0..1 pure-red additive halo around the disc (default 0.45). The red rings are soft-capped inside
+ *              irisLayers so they never tone-map orange; brightness/presence comes from this halo + haze, not HDR.
  *
  * Also exported: IRIS_GLSL (the `irisColor(vec2 p, float open, float pupil, float time)` function) so instanced
  * walls of irises can reuse the exact same drawing, and makeIrisMaterial(opts) for custom geometry.
@@ -56,6 +58,8 @@ vec4 irisLayers(vec2 p, float open, float pupil, float time) {
   // slow scan sweep (a brighter wedge rotating once every ~8 s)
   float sweep = pow(max(0.0, cos(a - time * 0.78)), 24.0) * body * 0.6;
   float ringI = outer * 0.9 + irisI + pring * 1.8 + sweep;
+  // soft knee: the hot rings saturate at ~1.2 so (x intensity <= 1.5) the red never tone-maps toward orange/salmon
+  ringI = ringI > 0.9 ? 0.9 + (1.0 - exp(-(ringI - 0.9) * 2.2)) * 0.3 : ringI;
   // housing disc (black lens body) out to the outer ring
   float housing = 1.0 - smoothstep(0.985 - aa, 0.985 + aa, rr);
   // pupil glint
@@ -154,16 +158,49 @@ export const setIrisUniforms = (m: THREE.ShaderMaterial, o: IrisOpts) => {
 
 const DISC = new THREE.PlaneGeometry(2, 2);
 
-export type IrisProps = IrisOpts & {radius?: number; renderOrder?: number} & Omit<React.ComponentProps<'group'>, 'children'>;
+// Pure-red halo around the iris: the glow comes from spread, not from over-driving red (which turns orange).
+const HALO_FRAG = /* glsl */ `
+uniform vec3 uColor;
+uniform float uK;
+varying vec2 vUv;
+void main() {
+  float r = length(vUv * 2.0 - 1.0);
+  float a = exp(-pow(max(r - 0.3, 0.0) * 3.4, 1.5)) * (1.0 - smoothstep(0.8, 1.0, r));
+  gl_FragColor = vec4(uColor * a * uK, 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`;
+const makeHaloMat = () =>
+  new THREE.ShaderMaterial({
+    uniforms: {uColor: {value: new THREE.Color(S.authRed)}, uK: {value: 0.5}},
+    vertexShader: VERT,
+    fragmentShader: HALO_FRAG,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
 
-export const Iris: React.FC<IrisProps> = ({open, pupil, intensity, color, time, housing, flicker, glint, opacity, radius = 0.5, renderOrder, ...group}) => {
+export type IrisProps = IrisOpts & {radius?: number; renderOrder?: number; glow?: number} & Omit<React.ComponentProps<'group'>, 'children'>;
+
+export const Iris: React.FC<IrisProps> = ({open, pupil, intensity, color, time, housing, flicker, glint, opacity, radius = 0.5, renderOrder, glow = 0.45, ...group}) => {
   const mat = useMemo(() => makeIrisMaterial(), []);
-  useLayoutEffect(() => () => mat.dispose(), [mat]);
+  const halo = useMemo(() => makeHaloMat(), []);
+  useLayoutEffect(() => () => {
+    mat.dispose();
+    halo.dispose();
+  }, [mat, halo]);
+  const o = Math.max(0, Math.min(1, open ?? 1));
+  const fl = flicker ? 1 - Math.min(1, flicker) * 0.85 : 1;
   useLayoutEffect(() => {
     setIrisUniforms(mat, {open, pupil, intensity, color, time, housing, flicker, glint, opacity});
+    halo.uniforms.uColor.value.set(color ?? S.authRed);
+    halo.uniforms.uK.value = glow * o * fl * (opacity ?? 1) * Math.min(1.2, (intensity ?? 1.5) / 1.5);
   });
   return (
     <group {...group}>
+      {glow > 0 ? (
+        <mesh geometry={DISC} material={halo} scale={radius * 2.1} position={[0, 0, -0.002 * radius]} renderOrder={renderOrder} userData={{silKeep: true}} />
+      ) : null}
       <mesh geometry={DISC} material={mat} scale={radius} renderOrder={renderOrder} userData={{silKeep: true}} />
     </group>
   );

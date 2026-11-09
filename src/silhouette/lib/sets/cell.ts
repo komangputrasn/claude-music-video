@@ -137,6 +137,11 @@ export const CELL_SPOTS = {
   hammerHook: [CELL.xMin + 0.075, CELL_PEGS.y, CELL_PEGS.z] as V3,
   hammerRotY: 0,
   hammerWallNormal: [1, 0, 0] as V3,
+  /** the TERMS props-module <HungSilHammer> convention (origin = WALL SURFACE between the pegs at the pegs' top, wall
+   *  normal = its local +Z): <HungSilHammer position={hungHammer} rotation-y={hungHammerRotY} head="left" pegs={false}/>
+   *  rests on this room's own pegs (±0.12 m, 0.11 m out), head toward the door (+Z), claw up */
+  hungHammer: [CELL.xMin, CELL_PEGS.y, CELL_PEGS.z] as V3,
+  hungHammerRotY: Math.PI / 2,
   hammerPegs: [[CELL.xMin + CELL_PEGS.out / 2, CELL_PEGS.y - CELL_PEGS.r, CELL_PEGS.z - CELL_PEGS.spacing / 2],
     [CELL.xMin + CELL_PEGS.out / 2, CELL_PEGS.y - CELL_PEGS.r, CELL_PEGS.z + CELL_PEGS.spacing / 2]] as [V3, V3],
   /** standing in front of the hammer wall, facing it (-X) */
@@ -153,10 +158,11 @@ export const CELL_SPOTS = {
   /** feeder monolith floor spot (base centre) — its face (+Z of the prop) turned to +X, toward the right side of the room */
   feeder: [-0.35, 0, 0.3] as V3,
   feederRotY: Math.PI / 2,
-  /** Pancake small in FRONT of the monolith's face, turned toward it (near-profile to the feederWide camera) — his
-   *  outline reads against the feeder's own red glow (iris + a red LightPool at its foot, from the scene/props) */
-  pancakeAtFeeder: [0.62, 0, 0.42] as V3,
-  pancakeAtFeederRotY: Math.PI + 0.3,
+  /** Pancake BESIDE the monolith (door side), nose ~0.15 m off its front corner, near-profile to the feederWide camera and
+   *  turned toward the box, so the 0.85 m box (props <Monolith>) stays bigger than him (he must not stand between it and
+   *  the camera). He needs a bright backdrop: the box's red halo / a red LightPool behind him, or the door cracked open */
+  pancakeAtFeeder: [0.16, 0, 1.27] as V3,
+  pancakeAtFeederRotY: Math.PI + 0.35,
   /** ceiling vent: centre of the grille (just below the ceiling) — the e-reader ash is pulled up into it */
   vent: [CELL_VENT.x, CELL.h - 0.02, CELL_VENT.z] as V3,
 };
@@ -175,8 +181,8 @@ export const CELL_CAMERAS: Record<string, CellCamera> = {
   wide: {position: [0, 1.45, 9.5], target: [0, 1.15, -1.4], fov: cameraFovForVisible(19.5), hideWalls: ['front'], hide: ['facade', 'outside'], note: 'diorama, front wall off'},
   /** profile at the bed from the right (right wall removed): the sleeper rides the head section up; slit light behind */
   bedProfile: {position: [6.5, 1.0, -1.15], target: [0, 0.98, -1.15], fov: cameraFovForVisible(15), hideWalls: ['right'], hide: ['printer'], note: 'profile, sitting up'},
-  /** the feeder wide from floor level (right wall removed): monolith face-on, Pancake beside it in profile, door leak behind */
-  feederWide: {position: [6.4, 0.3, 0.72], target: [-0.3, 0.62, 0.72], fov: cameraFovForVisible(17), hideWalls: ['right'], hide: ['printer'], note: 'floor level, held'},
+  /** the feeder wide from floor level (right wall removed): monolith face-on, Pancake beside it in profile, door behind him */
+  feederWide: {position: [6.4, 0.3, 0.75], target: [-0.3, 0.62, 0.75], fov: cameraFovForVisible(17), hideWalls: ['right'], hide: ['printer'], note: 'floor level, held'},
   /** the hammer wall: pegs across the vertical light slit (right wall removed) */
   hammerWall: {position: [6.0, 1.5, -0.9], target: [CELL.xMin, 1.45, -0.9], fov: cameraFovForVisible(11), hideWalls: ['right'], hide: ['printer'], note: 'hammer across the slit'},
   /** the block from outside: a grid of identical cells on their access decks, ours in the centre (monumental) */
@@ -186,5 +192,5 @@ export const CELL_CAMERAS: Record<string, CellCamera> = {
   /** from inside (back wall removed, above the bed) toward the window: blinds black against the city glow; climb-in shot */
   windowInside: {position: [0, 1.32, -8.5], target: [0, 1.45, 2.25], fov: cameraFovForVisible(17), hideWalls: ['back'], note: 'backlit window / climb'},
   /** the printer slab from the left (left wall removed): red slit, page halting out of it */
-  printer: {position: [-6.6, 3.5, -0.2], target: [CELL_PRINTER.frontX - 0.3, 1.0, -0.6], fov: cameraFovForVisible(16), hideWalls: ['left', 'ceiling'], note: 'printer from above-left'},
+  printer: {position: [-6.6, 3.5, -0.2], target: [CELL_PRINTER.frontX - 0.3, 1.0, -0.6], fov: cameraFovForVisible(16), hideWalls: ['left', 'ceiling'], hide: ['door'], note: 'printer from above-left'},
 };

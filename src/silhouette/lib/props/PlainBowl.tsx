@@ -144,7 +144,7 @@ export const PlainBowl: React.FC<PlainBowlProps> = ({
             seed={seed} />
           {shaft > 0 ? (
             <SoftCone from={[0, 2.6, -0.15]} to={[0, 0, 0]} radiusStart={0.25 * poolSize} radiusEnd={0.62 * poolSize}
-              color={S.dawnGold} intensity={0.26 * gp * shaft} edge={1.4} falloff={0.55} />
+              color={S.dawnGold} intensity={0.26 * gp * shaft} edge={1.4} falloff={0.55} floorY={0} floorSoft={0.12} />
           ) : null}
         </group>
       ) : null}

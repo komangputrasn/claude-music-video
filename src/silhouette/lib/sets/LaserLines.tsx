@@ -5,13 +5,15 @@
  *
  *   <LaserLines segments={[[a, b], [a, b, intensityMul], …]} color?={S.authRed} intensity?={1.6} width?={0.02}
  *               minPx?={1.6} halo?={3} time?={0} pulse?={0} pulseSpeed?={6} pulseSpacing?={9} fog?={0.6}
- *               opacity?={1} {...group}/>
+ *               opacity?={1} maxHdr?={2} {...group}/>
  *
  *   segments     [start, end] (+ optional per-segment intensity multiplier) in the group's local space. Endpoints may
  *                change every frame (gate edges sliding) — the attribute buffers are rewritten in useLayoutEffect.
  *   width        physical core width in metres (lines never get thinner than minPx on screen).
  *   halo         quad half-width in units of the core half-width (the soft glow around the core).
  *   intensity    HDR multiplier of `color`. Keep authRed ≤ 2 (ACES turns hotter red orange = reads as gold).
+ *   maxHdr       hard cap of one line's HDR value (intensity × core/halo × segment k × pulse), default 2, so pulses and
+ *                k > 1 segments never tone-map to orange. Crossing lines still add up (additive) at their intersections.
  *   pulse        0..1 brightness of bright packets travelling along the lines (distance-based, from `time`).
  *   fog          0..1 how much the scene fog dims far lines.
  * Origin: the group's origin; lines are wherever their endpoints say. Lines are clipped at the camera near plane.
@@ -72,7 +74,7 @@ void main() {
 
 const FRAG = /* glsl */ `
 uniform vec3 uColor;
-uniform float uTime, uPulse, uPulseSpeed, uPulseSpacing, uFogAmt, uOpacity;
+uniform float uTime, uPulse, uPulseSpeed, uPulseSpacing, uFogAmt, uOpacity, uMaxK;
 varying float vSide;
 varying float vI;
 varying float vAlong;
@@ -88,7 +90,7 @@ void main() {
     float ph = fract((vAlong - uTime * uPulseSpeed) / uPulseSpacing);
     p += uPulse * 1.2 * pow(smoothstep(0.75, 1.0, ph) * (1.0 - smoothstep(0.98, 1.0, ph)), 2.0);
   }
-  float k = (core + halo) * vI * vEnergy * p * uOpacity;
+  float k = min((core + halo) * vI * vEnergy * p, uMaxK) * uOpacity;
   float fogK = 0.0;
   #ifdef USE_FOG
     fogK = smoothstep(fogNear, fogFar, vFogDepth);
@@ -120,12 +122,14 @@ export type LaserLinesProps = GroupProps & {
   pulseSpacing?: number;
   fog?: number;
   opacity?: number;
+  /** cap of a single line's HDR value (default 2: authRed above ~2 tone-maps orange) */
+  maxHdr?: number;
   renderOrder?: number;
 };
 
 export const LaserLines: React.FC<LaserLinesProps> = ({
   segments, color = S.authRed, intensity = 1.6, width = 0.02, minPx = 1.6, halo = 3, time = 0, pulse = 0, pulseSpeed = 6,
-  pulseSpacing = 9, fog = 0.6, opacity = 1, renderOrder = 5, ...group
+  pulseSpacing = 9, fog = 0.6, opacity = 1, maxHdr = 2, renderOrder = 5, ...group
 }) => {
   const {size} = useThree();
   const cap = Math.max(8, 1 << Math.ceil(Math.log2(Math.max(1, segments.length))));
@@ -150,7 +154,7 @@ export const LaserLines: React.FC<LaserLinesProps> = ({
           {
             uRes: {value: new THREE.Vector2(1920, 1080)}, uWidth: {value: 0.02}, uMinPx: {value: 1.6}, uHalo: {value: 3},
             uColor: {value: new THREE.Color()}, uTime: {value: 0}, uPulse: {value: 0}, uPulseSpeed: {value: 6},
-            uPulseSpacing: {value: 9}, uFogAmt: {value: 0.6}, uOpacity: {value: 1},
+            uPulseSpacing: {value: 9}, uFogAmt: {value: 0.6}, uOpacity: {value: 1}, uMaxK: {value: 1.25},
           },
         ]),
         vertexShader: VERT,
@@ -187,6 +191,7 @@ export const LaserLines: React.FC<LaserLinesProps> = ({
     u.uPulseSpacing.value = pulseSpacing;
     u.uFogAmt.value = fog;
     u.uOpacity.value = opacity;
+    u.uMaxK.value = maxHdr / Math.max(1e-3, intensity);
   });
   return (
     <group {...group}>

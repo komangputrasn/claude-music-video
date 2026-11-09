@@ -1,16 +1,19 @@
 // TERMS props look-dev: every hero prop staged as it would appear in a shot of the film.
-//   node scripts/still.mjs silplay SilProps --frames=15,38,52,66,72,93,101,110,125,148,165,185,200,216,226,236,255,278,292,312,320
+//   node scripts/still.mjs silplay SilProps --frames=15,38,52,56,66,72,93,101,110,125,148,165,185,200,216,226,236,255,278,292,306,312,320
 //   0–29    V1Feeder: the Monolith (red iris on the brow, stencil, red food slot) looming over a begging Pancake
 //   30–44   V2Rain: Pancake's nose rests on the Monolith under the red eye (3/4, pancakeAtMonolith with a yaw)
-//   45–59   V2Rain: grandpa's hammer hung on two pegs on the lit wall, faint gold handle edge (warmth 0.25)
+//   45–52   V2Rain: grandpa's hammer hung on two pegs on the lit wall, faint gold handle edge (warmth 0.25)
+//   53–59   the same in `hook` mode, dropped onto the CellRoom's own pegs at CELL_SPOTS.hammerHook (wall on −X)
 //   60–89   Swing alignment, side view: monolithSwing(p) at MONOLITH.guySwingSpot; p = 0.5 at frame 72 = contact
+//           (hammer warmth stays at the 0.3 foreshadow until the impact; it only goes above 0.3 after 129.2 s)
 //   90–149  Swing close-up: impact at 92 → iris shards + flash, brow caves, panel falls, gold spill, kibble sparks + pile
 //   150–179 Aftermath: phone in one hand, hammer (warmth 1) in the other, backlit by gold; Pancake eats at the pile, tail wags
 //   180–209 Final: the paper 1984 held up, hood down (closed 180–189, open 190+)
 //   210–239 Hold: the pillow iris in the dark (seam → lids part → open; talks from 230)
 //   240–269 Final hero: Pancake eating from the plain bowl in a pool of gold
 //   270–299 Phone: at the ear (270–284) / insert of the open screen (285–299)
-//   300–329 V1Feeder: the e-reader's words drift up as ash into a red ceiling vent (close 300–314, wide 315–329)
+//   300–329 V1Feeder: the e-reader's words drift up as ash into a red ceiling vent (close, from above his shoulder 300–314;
+//           wide 315–329)
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {SilStage, CameraRig} from '../lib/SilStage';
@@ -25,6 +28,7 @@ import {
 import {guyIdle, guyHoldUp, guyPhoneToEar, mergePose} from '../../lib/characters/Guy';
 import {pancakeBeg, pancakeEat, pancakeIdle, PANCAKE} from '../../lib/characters/Pancake';
 import {ramp} from '../../lib/time';
+import {CELL, CELL_PEGS, CELL_SPOTS} from '../lib/sets';
 
 export const duration = 330;
 
@@ -102,6 +106,28 @@ export default function SilProps() {
         <SilPancake pose={pose} position={pl.position} rotation-y={pl.rotationY} />
       </>
     );
+  } else if (f >= 53 && f < 60) {
+    // hook mode: the CellRoom draws its own pegs (0.24 m apart, 0.11 m out of the −X wall); the hammer drops onto
+    // CELL_SPOTS.hammerHook in the Y2K HungHammer frame. Stand-in wall + pegs at the CellRoom's coordinates.
+    const hk = CELL_SPOTS.hammerHook;
+    body = (
+      <>
+        <CameraRig position={[CELL.xMin + 1.9, hk[1] + 0.05, hk[2] + 0.25]} target={[CELL.xMin, hk[1] + 0.01, hk[2] + 0.02]} fov={fov(11)} />
+        <mesh position={[CELL.xMin, 1.5, hk[2]]} rotation-y={Math.PI / 2}>
+          <planeGeometry args={[8, 5]} />
+          <meshBasicMaterial color={GREYS.g1} />
+        </mesh>
+        <Backlight position={[CELL.xMin + 0.015, 1.45, hk[2] + 0.1]} rotation-y={Math.PI / 2} size={[1.4, 1.0]} shape="slab" softness={0.8}
+          intensity={0.75} time={t} />
+        {CELL_SPOTS.hammerPegs.map((pg, i) => (
+          <mesh key={i} position={pg} rotation-z={Math.PI / 2}>
+            <cylinderGeometry args={[CELL_PEGS.r, CELL_PEGS.r, CELL_PEGS.out, 12]} />
+            <meshBasicMaterial color={S.void} />
+          </mesh>
+        ))}
+        <HungSilHammer hook position={hk} rotation-y={CELL_SPOTS.hammerRotY} warmth={0.25} />
+      </>
+    );
   } else if (f < 60) {
     // V2Rain — grandpa's hammer on the wall in the screen glow from the window: the only warm edge in the film so far.
     body = (
@@ -125,7 +151,7 @@ export default function SilProps() {
         <Backlight position={[-9, 1.6, 0.6]} rotation-y={Math.PI / 2} size={[12, 7]} softness={0.85} intensity={0.85} time={t} />
         <Floor />
         <Monolith time={t} />
-        <SilGuy position={sp.position} rotation-y={sp.rotationY} pose={monolithSwing(p)} rightHand={<HeldSilHammer warmth={0.6} />} />
+        <SilGuy position={sp.position} rotation-y={sp.rotationY} pose={monolithSwing(p)} rightHand={<HeldSilHammer warmth={0.3} />} />
       </>
     );
   } else if (f < 150) {
@@ -143,7 +169,7 @@ export default function SilProps() {
         <Floor />
         <Monolith time={t} shatter={sh} spill={spill} kibble={kib} />
         <SilGuy position={sp.position} rotation-y={sp.rotationY} pose={monolithSwing(Math.min(1, p))}
-          rightHand={<HeldSilHammer warmth={1} />} rim={spill > 0 ? {color: S.dawnGold, strength: 0.6 * spill, power: 6, dir: [-0.8, -0.3]} : null} />
+          rightHand={<HeldSilHammer warmth={f < 92 ? 0.3 : 0.3 + 0.7 * ramp(f, 92, 100)} />} rim={spill > 0 ? {color: S.dawnGold, strength: 0.6 * spill, power: 6, dir: [-0.8, -0.3]} : null} />
       </>
     );
   } else if (f < 180) {
@@ -235,7 +261,9 @@ export default function SilProps() {
     body = (
       <>
         {close ? (
-          <CameraRig position={[-0.5, 1.8, 1.05]} target={[-0.12, 1.16, 0.36]} fov={fov(16)} />
+          // face-on to the page from above his right shoulder (along the screen normal), rolled so the text reads upright:
+          // 'read' mode orients the page for HIM (text-up points away from him), so a camera in front of him sees it upside down
+          <CameraRig position={[-0.415, 2.069, 0.105]} target={[-0.135, 1.148, 0.375]} roll={-1.335} fov={fov(16)} />
         ) : (
           <CameraRig position={[1.9, 1.3, 4.6]} target={[0, 1.75, 0.2]} fov={fov(28)} />
         )}

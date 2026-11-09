@@ -11,7 +11,7 @@ export {Megablock, CityGrid, megablockLayout, megablockPane, MEGABLOCK_WARM_DEFA
 export type {MegablockProps, MegaFace, WarmWindow, CityGridProps, CityBlock} from './Megablock';
 export {Plaza, plazaSpots, PLAZA_SPOTS, PLAZA_CAMERAS} from './Plaza';
 export type {PlazaProps} from './Plaza';
-export {HouseCube, houseSpots, HOUSE_SPOTS, HOUSE_CAMERAS} from './HouseCube';
+export {HouseCube, houseSpots, HOUSE_SPOTS, HOUSE_CAMERAS, HOUSE_MIN_SIZE} from './HouseCube';
 export type {HouseCubeProps} from './HouseCube';
 export {Corridor, corridorLayout, CORRIDOR_SPOTS, CORRIDOR_CAMERAS} from './Corridor';
 export type {CorridorProps} from './Corridor';
