@@ -1,12 +1,13 @@
 /**
  * TERMS overlays (DESIGN-silhouette §2.4, §2.6), mounted by Layout when overlays="silhouette":
- *   <Letterbox/>    2.39:1 black bars (138 px top and bottom) — always on.
- *   <SilCaptions/>  lower-left, uppercase Futura, bone white, words appear one at a time (hard on) as they are sung.
- *                   Price/plan/lock words flash authRed; in the final chorus "good / own / paper / bowl / ground" are
- *                   dawnGold. Sits in the bottom bar, slightly overlapping the picture.
+ *   <Letterbox/>    2.39:1 black bars (138 px top and bottom) — always on. The ONLY global overlay.
  *
- * Scenes do NOT render captions or bars. Keep important picture content inside y ∈ [138, 920] px and away from the
- * lower-left ~1350×20 px of the picture (the caption block's first row overlaps the picture bottom by 12 px).
+ * LYRICS LIVE INSIDE THE WORLD in this cut: every scene stages its sung lines diegetically with <WorldLyric>
+ * (src/silhouette/lib/WorldLyric.tsx). There is no caption overlay. <SilCaptions/> below is kept only as a
+ * reference/debug tool (e.g. a playground timing check) and is NOT mounted.
+ *   <SilCaptions/>  lower-left, uppercase Futura, bone white, words appear one at a time (hard on) as they are sung.
+ *
+ * Scenes do NOT render the bars. Keep important picture content inside y ∈ [138, 942] px.
  *
  *   <SilCaptions time?={songSeconds} fontSize?={38} left?={120} top?={930} maxWidth?={1320}/>   (balanced wrapping)
  *   silCaptionLineAt(t) → the lyric line shown at t (or null)
@@ -95,6 +96,5 @@ export const SilCaptions: React.FC<{time?: number; fontSize?: number; left?: num
 export const SilOverlays: React.FC = () => (
   <AbsoluteFill style={{pointerEvents: 'none'}}>
     <Letterbox />
-    <SilCaptions />
   </AbsoluteFill>
 );

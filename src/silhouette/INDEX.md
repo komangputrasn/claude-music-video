@@ -16,8 +16,9 @@ src/silhouette/
     Iris.tsx               <Iris>, IRIS_GLSL, makeIrisMaterial(), setIrisUniforms()
     SilStage.tsx           <SilStage>, CameraRig (re-export), SIL_BLOOM, SIL_LENS
     Crowd.tsx              <Crowd> instanced crowds of identical hooded silhouettes, crowdLayout()
+    WorldLyric.tsx         <WorldLyric> the lyrics staged INSIDE the world; sceneLyricLines(), metresForPx(), lyricWindow()
     atmos/  tenure/  sets/  props/    (modules: see §3–§6)
-  overlays/SilOverlays.tsx <Letterbox>, <SilCaptions>, <SilOverlays> (mounted by Layout overlays="silhouette")
+  overlays/SilOverlays.tsx <Letterbox> (the only global overlay), <SilOverlays>; <SilCaptions> = unmounted debug tool
   scenes/<Id>/index.tsx    one folder per scene (named export <Id>), plus NOTES.md shot list
   scenes/index.ts          SIL_SCENES map used by the MainSilhouette composition (src/Root.tsx)
   playground/<Name>.tsx    look-dev playgrounds (default export, optional `export const duration = N`)
@@ -47,18 +48,21 @@ src/silhouette/
 3. **Brightness/bloom:** `<SilStage>` blooms anything above ~0.86 after tone mapping. Big backlit fog walls and haze
    must stay at or BELOW bloom (≈0.6–0.85 of bone) or the bloom washes the silhouettes grey. Only screens, beams,
    irises, and the gold spill go above. Red above ~2× intensity turns ORANGE under ACES (reads as gold) — keep red ≤ 2.
-4. **Framing:** letterboxed 2.39:1 — only y ∈ [138, 942] px is visible. Compose inside that band; keep the lower-left
-   ~1250×60 px of the picture free of key action (captions). Long lenses (fov 18–35), monumental scale, symmetry,
+4. **Framing:** letterboxed 2.39:1 — only y ∈ [138, 942] px is visible. Compose inside that band. Long lenses (fov 18–35), monumental scale, symmetry,
    slow dolly/crane. No fisheye, whip-pans, strobe, split screens. Few cuts (verses 4–8 s shots; chorus cuts on
    downbeats only). Rhythm comes from LIGHT: pulse screens/beams/fog with `bassAt()`/`beatAt()`.
-5. **Text:** system fonts only (`SFONTS.futura` for signage, `SFONTS.mono` for legal/serials), uppercase, wide
+5. **Lyrics live in the world:** there is NO caption overlay. Each scene stages every line it owns
+   (`sceneLyricLines(t0, t1)`) with `<WorldLyric>` as part of the shot — projected on fog, on screens, stencilled,
+   printed, carved, black against the dawn — legible (cap height ≥ ~26 px; use `metresForPx`) for as long as it is sung,
+   words appearing as sung, red control words, gold free words in the final chorus.
+6. **Text:** system fonts only (`SFONTS.futura` for signage, `SFONTS.mono` for legal/serials), uppercase, wide
    tracking, bone or authRed, architectural scale. Canvas textures (2D canvas can use the system fonts synchronously).
    No drei `<Text>`. Fonts fall back on Linux (that's fine for previews).
-6. **Determinism / perf (CLAUDE.md, DESIGN.md §5):** animate only from `useCurrentFrame()`/`useSongTime()`; per-frame
+7. **Determinism / perf (CLAUDE.md, DESIGN.md §5):** animate only from `useCurrentFrame()`/`useSongTime()`; per-frame
    mutation only in `useLayoutEffect`; no `useFrame`, `useEffect` for animation, `Math.random`, `Date`. Seeded
    randomness via `rand(seed)`/`noise1()` from `src/lib/time`. Build geometry/materials/textures in `useMemo`;
    redraw canvas textures only when content changes; instance repeated things. Every 3D shot inside `<SilStage>`.
-7. **Sound-to-image:** bass pulses TENURE screens; the near-silence 162–166.39 s ("Is that you?") is visually near-silent
+8. **Sound-to-image:** bass pulses TENURE screens; the near-silence 162–166.39 s ("Is that you?") is visually near-silent
    (one light source, no motion except breath); the chorus entrances 57.75 s and 166.39 s are the only moments the
    whole frame changes brightness at once.
 
@@ -115,6 +119,19 @@ light behind him so he separates from the mass). `crowdLayout(props)` returns th
 `.preview/out/silplay-CrowdTest/` (`silplay CrowdTest`; f150/f195 show a red iris failing above a crowd — a dead iris
 leaves its black housing disc: a "black sun").
 
-### Overlays (already global — scenes draw neither bars nor captions)
-`<Letterbox/>` (138 px bars), `<SilCaptions/>` (lower-left Futura, words appear as sung; red/gold word colouring),
-`silCaptionLineAt(t)`, `silWordColor(word, section, since)`.
+### `<WorldLyric>` — the lyrics, inside the world
+`<WorldLyric line={i} time={songT} size?={0.5 /*em, metres*/} mode?='light'|'screen'|'paint'|'dark' maxWidth? align?
+anchor? color? intensity? from? until? reveal?='word'|'line' halo? fog? opacity? flicker? perWord? font? {...group}/>`
+- Words appear one at a time exactly when sung; control words authRed (flash on onset), final-chorus free words dawnGold.
+- `light` = additive light projected into haze/onto walls (soft halo, ignores fog); `screen` = emissive letters on a
+  TENURE screen; `paint` = matte print/stencil on a surface (fog, no bloom); `dark` = black letters against a bright
+  sky/backlight (control/free words get a coloured glow behind them).
+- Default window: first sung word → next line's first word. Override with `from`/`until` (e.g. keep a line on a wall
+  until the cut). `perWord(i, info)` animates individual words (ash drift, falling letters, flicker per word).
+- Helpers: `sceneLyricLines(t0, t1)` (the lines your scene must stage), `lyricWindow(i)`, `metresForPx(px, dist, fov)`,
+  `measureLyric(i, size, maxWidth)`, `lyricWordColor()`, `displayWord()`.
+- Verified: `.preview/out/silplay-Lyrics/` (`silplay Lyrics`): f0 light on fog, f1 screen, f2 paint, f3 dark vs gold,
+  f4 per-word ash drift.
+
+### Overlay (already global — scenes never draw it)
+`<Letterbox/>` (138 px bars). No captions: see `<WorldLyric>`.

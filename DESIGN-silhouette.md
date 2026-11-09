@@ -66,12 +66,16 @@ No environment-map chrome.
   Price lines are projected on the fog. Lease numbers are stencilled on everything (e.g. `LEASE 0315-77`).
 - Diegetic text is mostly bone or authRed and never decorative.
 
-### 2.6 Captions (new component, not the Y2K karaoke)
-Lower-left aligned inside the letterbox's bottom bar area, slightly overlapping the picture. Uppercase Futura, bone
-white, about 34–40 px, tracked +0.15em, no pill or outline. Words appear one at a time (hard on, no wipe) as they are
-sung, from `lyrics.json`. Words that name a price, plan or lock (buy, plan, upgrade, cancel, locked, tier, Plus,
-patent, fee, declined) flash **authRed**. In the final chorus, "good", "own", "paper", "bowl" and "ground" appear in
-**dawnGold**. Text stays below the picture's lower third; the 2.39:1 bars give it room.
+### 2.6 Lyrics live inside the world (no caption overlay)
+There is no lower-third caption track in this cut. Every sung line is **staged diegetically** by the scene that owns
+it, as part of the architecture and light: projected onto fog, glowing on a TENURE screen, stencilled on concrete,
+printed on the halted page in the printer, fading from the e-reader as ash, carved into the "Iliad" wall, standing as
+black letters against the dawn. Uppercase Futura, tracked +0.15em; bone by default. Words appear one at a time
+(hard on, no wipe) exactly as they are sung, from `lyrics.json`. Words that name a price, plan or lock (buy, plan,
+upgrade, cancel, locked, tier, Plus, patent, fee, declined) flash **authRed**. In the final chorus, "good", "own",
+"paper", "bowl" and "ground" appear in **dawnGold**. Every line must be legible inside the 2.39:1 picture (cap height
+at least ~26 px of the 1080 frame) for the time it is sung, and must feel like part of the world, never like a subtitle.
+Use `<WorldLyric>` (`src/silhouette/lib/WorldLyric.tsx`). The letterbox is the only global overlay.
 
 ### 2.7 Sound-to-image rules
 - Bass hits pulse TENURE screens (`bassAt`).
@@ -112,7 +116,7 @@ patent, fee, declined) flash **authRed**. In the final chorus, "good", "own", "p
 ## 5. Technical plan
 - **Coexistence**: add a second composition, **`MainSilhouette`**, in `src/Root.tsx` alongside `Main`. Scenes live in
   `src/silhouette/scenes/<Id>/index.tsx` (same `SceneId`s and frame ranges from `src/timeline.ts`). The new version's
-  shared pieces go in `src/silhouette/lib/`, and its overlays (letterbox and captions) in `src/silhouette/overlays/`.
+  shared pieces go in `src/silhouette/lib/`, and its overlay (the letterbox) in `src/silhouette/overlays/`.
   Do not modify the Y2K scenes.
 - **Layout**: `src/Layout.tsx` currently always mounts the Y2K `GlobalOverlays`. Add a prop to choose the overlay set,
   e.g. `overlays?: 'y2k' | 'silhouette' | false`, and keep `Main`'s output identical.
@@ -133,6 +137,8 @@ patent, fee, declined) flash **authRed**. In the final chorus, "good", "own", "p
 
 ## 6. Done means
 - Every lyric line has a clear silhouette image; the story reads with the sound off.
+- Every sung line is legible inside the world while it is sung (no caption overlay), placed where it belongs in the
+  shot (on fog, screens, walls, paper), with authRed control words and dawnGold free words.
 - No visible faces anywhere; every character beat reads from the outline alone.
 - authRed only on control, dawnGold only after the swing (except the hammer-handle foreshadow), and grey everywhere
   else.
