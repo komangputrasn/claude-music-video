@@ -1,0 +1,2428 @@
+{
+ "lines": [
+  {
+   "i": 0,
+   "section": "verse1",
+   "text": "The bed sat me up at a quarter past three,",
+   "start": 12.5,
+   "end": 16.96,
+   "words": [
+    {
+     "text": "The",
+     "start": 12.5,
+     "end": 13.26
+    },
+    {
+     "text": "bed",
+     "start": 13.26,
+     "end": 13.6
+    },
+    {
+     "text": "sat",
+     "start": 13.6,
+     "end": 13.88
+    },
+    {
+     "text": "me",
+     "start": 13.88,
+     "end": 14.2
+    },
+    {
+     "text": "up",
+     "start": 14.2,
+     "end": 14.6
+    },
+    {
+     "text": "at",
+     "start": 14.6,
+     "end": 15.1
+    },
+    {
+     "text": "a",
+     "start": 15.1,
+     "end": 15.32
+    },
+    {
+     "text": "quarter",
+     "start": 15.32,
+     "end": 15.96
+    },
+    {
+     "text": "past",
+     "start": 15.96,
+     "end": 16.56
+    },
+    {
+     "text": "three,",
+     "start": 16.56,
+     "end": 16.96
+    }
+   ]
+  },
+  {
+   "i": 1,
+   "section": "verse1",
+   "text": "and a voice in the pillow said, \"Sleep has a fee.\"",
+   "start": 16.96,
+   "end": 21.16,
+   "words": [
+    {
+     "text": "and",
+     "start": 16.96,
+     "end": 17.58
+    },
+    {
+     "text": "a",
+     "start": 17.58,
+     "end": 17.74
+    },
+    {
+     "text": "voice",
+     "start": 17.74,
+     "end": 18.1
+    },
+    {
+     "text": "in",
+     "start": 18.1,
+     "end": 18.38
+    },
+    {
+     "text": "the",
+     "start": 18.38,
+     "end": 18.56
+    },
+    {
+     "text": "pillow",
+     "start": 18.56,
+     "end": 18.98
+    },
+    {
+     "text": "said,",
+     "start": 18.98,
+     "end": 19.44
+    },
+    {
+     "text": "\"Sleep",
+     "start": 19.82,
+     "end": 20.06
+    },
+    {
+     "text": "has",
+     "start": 20.06,
+     "end": 20.6
+    },
+    {
+     "text": "a",
+     "start": 20.6,
+     "end": 20.82
+    },
+    {
+     "text": "fee.\"",
+     "start": 20.82,
+     "end": 21.16
+    }
+   ]
+  },
+  {
+   "i": 2,
+   "section": "verse1",
+   "text": "There's ink in the printer, but it won't print a line,",
+   "start": 21.16,
+   "end": 25.68,
+   "words": [
+    {
+     "text": "There's",
+     "start": 21.16,
+     "end": 22.3
+    },
+    {
+     "text": "ink",
+     "start": 22.3,
+     "end": 22.5
+    },
+    {
+     "text": "in",
+     "start": 22.5,
+     "end": 22.76
+    },
+    {
+     "text": "the",
+     "start": 22.76,
+     "end": 22.9
+    },
+    {
+     "text": "printer,",
+     "start": 22.9,
+     "end": 23.38
+    },
+    {
+     "text": "but",
+     "start": 23.38,
+     "end": 23.88
+    },
+    {
+     "text": "it",
+     "start": 23.88,
+     "end": 24.06
+    },
+    {
+     "text": "won't",
+     "start": 24.06,
+     "end": 24.56
+    },
+    {
+     "text": "print",
+     "start": 24.56,
+     "end": 24.94
+    },
+    {
+     "text": "a",
+     "start": 24.94,
+     "end": 25.3
+    },
+    {
+     "text": "line,",
+     "start": 25.3,
+     "end": 25.68
+    }
+   ]
+  },
+  {
+   "i": 3,
+   "section": "verse1",
+   "text": "'cause HP shuts it off when my card gets declined.",
+   "start": 25.68,
+   "end": 29.88,
+   "words": [
+    {
+     "text": "'cause",
+     "start": 25.68,
+     "end": 26.08
+    },
+    {
+     "text": "HP",
+     "start": 26.08,
+     "end": 26.5
+    },
+    {
+     "text": "shuts",
+     "start": 26.5,
+     "end": 27.08
+    },
+    {
+     "text": "it",
+     "start": 27.08,
+     "end": 27.48
+    },
+    {
+     "text": "off",
+     "start": 27.48,
+     "end": 27.84
+    },
+    {
+     "text": "when",
+     "start": 27.84,
+     "end": 28.16
+    },
+    {
+     "text": "my",
+     "start": 28.16,
+     "end": 28.48
+    },
+    {
+     "text": "card",
+     "start": 28.48,
+     "end": 29.0
+    },
+    {
+     "text": "gets",
+     "start": 29.0,
+     "end": 29.34
+    },
+    {
+     "text": "declined.",
+     "start": 29.34,
+     "end": 29.88
+    }
+   ]
+  },
+  {
+   "i": 4,
+   "section": "verse1",
+   "text": "My Kindle's got Orwell, at least for today,",
+   "start": 29.88,
+   "end": 34.2,
+   "words": [
+    {
+     "text": "My",
+     "start": 29.88,
+     "end": 30.9
+    },
+    {
+     "text": "Kindle's",
+     "start": 30.9,
+     "end": 31.46
+    },
+    {
+     "text": "got",
+     "start": 31.46,
+     "end": 31.74
+    },
+    {
+     "text": "Orwell,",
+     "start": 31.74,
+     "end": 32.18
+    },
+    {
+     "text": "at",
+     "start": 32.94,
+     "end": 33.08
+    },
+    {
+     "text": "least",
+     "start": 33.08,
+     "end": 33.36
+    },
+    {
+     "text": "for",
+     "start": 33.36,
+     "end": 33.66
+    },
+    {
+     "text": "today,",
+     "start": 33.66,
+     "end": 34.2
+    }
+   ]
+  },
+  {
+   "i": 5,
+   "section": "verse1",
+   "text": "Amazon took it back once, and they can take it away.",
+   "start": 34.2,
+   "end": 38.84,
+   "words": [
+    {
+     "text": "Amazon",
+     "start": 34.2,
+     "end": 34.98
+    },
+    {
+     "text": "took",
+     "start": 34.98,
+     "end": 35.78
+    },
+    {
+     "text": "it",
+     "start": 35.78,
+     "end": 35.92
+    },
+    {
+     "text": "back",
+     "start": 35.92,
+     "end": 36.14
+    },
+    {
+     "text": "once,",
+     "start": 36.14,
+     "end": 36.56
+    },
+    {
+     "text": "and",
+     "start": 36.72,
+     "end": 36.94
+    },
+    {
+     "text": "they",
+     "start": 36.94,
+     "end": 37.2
+    },
+    {
+     "text": "can",
+     "start": 37.2,
+     "end": 37.42
+    },
+    {
+     "text": "take",
+     "start": 37.42,
+     "end": 37.78
+    },
+    {
+     "text": "it",
+     "start": 37.78,
+     "end": 38.14
+    },
+    {
+     "text": "away.",
+     "start": 38.14,
+     "end": 38.84
+    }
+   ]
+  },
+  {
+   "i": 6,
+   "section": "verse1",
+   "text": "The feeder said, \"Breakfast is Plus members only,\"",
+   "start": 38.84,
+   "end": 43.4,
+   "words": [
+    {
+     "text": "The",
+     "start": 38.84,
+     "end": 39.54
+    },
+    {
+     "text": "feeder",
+     "start": 39.54,
+     "end": 40.14
+    },
+    {
+     "text": "said,",
+     "start": 40.14,
+     "end": 40.46
+    },
+    {
+     "text": "\"Breakfast",
+     "start": 40.46,
+     "end": 40.9
+    },
+    {
+     "text": "is",
+     "start": 40.9,
+     "end": 41.38
+    },
+    {
+     "text": "Plus",
+     "start": 41.38,
+     "end": 41.84
+    },
+    {
+     "text": "members",
+     "start": 41.84,
+     "end": 42.62
+    },
+    {
+     "text": "only,\"",
+     "start": 42.62,
+     "end": 43.4
+    }
+   ]
+  },
+  {
+   "i": 7,
+   "section": "verse1",
+   "text": "and Pancake looked up at me, hungry and lonely.",
+   "start": 43.4,
+   "end": 47.82,
+   "words": [
+    {
+     "text": "and",
+     "start": 43.4,
+     "end": 44.0
+    },
+    {
+     "text": "Pancake",
+     "start": 44.0,
+     "end": 44.58
+    },
+    {
+     "text": "looked",
+     "start": 44.58,
+     "end": 44.88
+    },
+    {
+     "text": "up",
+     "start": 44.88,
+     "end": 45.22
+    },
+    {
+     "text": "at",
+     "start": 45.22,
+     "end": 45.38
+    },
+    {
+     "text": "me,",
+     "start": 45.38,
+     "end": 45.7
+    },
+    {
+     "text": "hungry",
+     "start": 45.86,
+     "end": 46.7
+    },
+    {
+     "text": "and",
+     "start": 46.7,
+     "end": 47.12
+    },
+    {
+     "text": "lonely.",
+     "start": 47.12,
+     "end": 47.82
+    }
+   ]
+  },
+  {
+   "i": 8,
+   "section": "pre",
+   "text": "Hold on, buddy, I'll be right back,",
+   "start": 47.82,
+   "end": 50.34,
+   "words": [
+    {
+     "text": "Hold",
+     "start": 47.82,
+     "end": 48.72
+    },
+    {
+     "text": "on,",
+     "start": 48.72,
+     "end": 48.98
+    },
+    {
+     "text": "buddy,",
+     "start": 48.98,
+     "end": 49.22
+    },
+    {
+     "text": "I'll",
+     "start": 49.44,
+     "end": 49.5
+    },
+    {
+     "text": "be",
+     "start": 49.5,
+     "end": 49.7
+    },
+    {
+     "text": "right",
+     "start": 49.7,
+     "end": 49.98
+    },
+    {
+     "text": "back,",
+     "start": 49.98,
+     "end": 50.34
+    }
+   ]
+  },
+  {
+   "i": 9,
+   "section": "pre",
+   "text": "one bag of food, and that's that.",
+   "start": 50.34,
+   "end": 52.42,
+   "words": [
+    {
+     "text": "one",
+     "start": 50.34,
+     "end": 50.82
+    },
+    {
+     "text": "bag",
+     "start": 50.82,
+     "end": 51.1
+    },
+    {
+     "text": "of",
+     "start": 51.1,
+     "end": 51.36
+    },
+    {
+     "text": "food,",
+     "start": 51.36,
+     "end": 51.78
+    },
+    {
+     "text": "and",
+     "start": 51.78,
+     "end": 51.98
+    },
+    {
+     "text": "that's",
+     "start": 51.98,
+     "end": 52.22
+    },
+    {
+     "text": "that.",
+     "start": 52.22,
+     "end": 52.42
+    }
+   ]
+  },
+  {
+   "i": 10,
+   "section": "pre",
+   "text": "How hard can it be to buy one thing",
+   "start": 52.42,
+   "end": 54.6,
+   "words": [
+    {
+     "text": "How",
+     "start": 52.42,
+     "end": 52.66
+    },
+    {
+     "text": "hard",
+     "start": 52.66,
+     "end": 53.02
+    },
+    {
+     "text": "can",
+     "start": 53.02,
+     "end": 53.18
+    },
+    {
+     "text": "it",
+     "start": 53.18,
+     "end": 53.28
+    },
+    {
+     "text": "be",
+     "start": 53.28,
+     "end": 53.5
+    },
+    {
+     "text": "to",
+     "start": 53.5,
+     "end": 53.68
+    },
+    {
+     "text": "buy",
+     "start": 53.68,
+     "end": 53.94
+    },
+    {
+     "text": "one",
+     "start": 53.94,
+     "end": 54.28
+    },
+    {
+     "text": "thing",
+     "start": 54.28,
+     "end": 54.6
+    }
+   ]
+  },
+  {
+   "i": 11,
+   "section": "pre",
+   "text": "in a world where you can't own anything?",
+   "start": 54.6,
+   "end": 56.68,
+   "words": [
+    {
+     "text": "in",
+     "start": 54.6,
+     "end": 54.8
+    },
+    {
+     "text": "a",
+     "start": 54.8,
+     "end": 54.92
+    },
+    {
+     "text": "world",
+     "start": 54.92,
+     "end": 55.16
+    },
+    {
+     "text": "where",
+     "start": 55.16,
+     "end": 55.34
+    },
+    {
+     "text": "you",
+     "start": 55.34,
+     "end": 55.46
+    },
+    {
+     "text": "can't",
+     "start": 55.46,
+     "end": 55.8
+    },
+    {
+     "text": "own",
+     "start": 55.8,
+     "end": 56.02
+    },
+    {
+     "text": "anything?",
+     "start": 56.02,
+     "end": 56.68
+    }
+   ]
+  },
+  {
+   "i": 12,
+   "section": "chorus1",
+   "text": "You said \"Buy now,\" but you meant \"for now,\"",
+   "start": 57.76,
+   "end": 61.68,
+   "words": [
+    {
+     "text": "You",
+     "start": 57.76,
+     "end": 58.58
+    },
+    {
+     "text": "said",
+     "start": 58.58,
+     "end": 58.94
+    },
+    {
+     "text": "\"Buy",
+     "start": 58.94,
+     "end": 59.2
+    },
+    {
+     "text": "now,\"",
+     "start": 59.2,
+     "end": 59.66
+    },
+    {
+     "text": "but",
+     "start": 59.86,
+     "end": 60.02
+    },
+    {
+     "text": "you",
+     "start": 60.02,
+     "end": 60.28
+    },
+    {
+     "text": "meant",
+     "start": 60.28,
+     "end": 60.7
+    },
+    {
+     "text": "\"for",
+     "start": 60.7,
+     "end": 61.1
+    },
+    {
+     "text": "now,\"",
+     "start": 61.1,
+     "end": 61.68
+    }
+   ]
+  },
+  {
+   "i": 13,
+   "section": "chorus1",
+   "text": "you put my whole house on a plan somehow.",
+   "start": 61.68,
+   "end": 65.72,
+   "words": [
+    {
+     "text": "you",
+     "start": 61.68,
+     "end": 62.42
+    },
+    {
+     "text": "put",
+     "start": 62.42,
+     "end": 62.76
+    },
+    {
+     "text": "my",
+     "start": 62.76,
+     "end": 63.06
+    },
+    {
+     "text": "whole",
+     "start": 63.06,
+     "end": 63.48
+    },
+    {
+     "text": "house",
+     "start": 63.48,
+     "end": 64.02
+    },
+    {
+     "text": "on",
+     "start": 64.02,
+     "end": 64.48
+    },
+    {
+     "text": "a",
+     "start": 64.48,
+     "end": 64.66
+    },
+    {
+     "text": "plan",
+     "start": 64.66,
+     "end": 65.1
+    },
+    {
+     "text": "somehow.",
+     "start": 65.1,
+     "end": 65.72
+    }
+   ]
+  },
+  {
+   "i": 14,
+   "section": "chorus1",
+   "text": "I'm done with \"upgrade to continue,\"",
+   "start": 65.72,
+   "end": 69.48,
+   "words": [
+    {
+     "text": "I'm",
+     "start": 65.72,
+     "end": 66.9
+    },
+    {
+     "text": "done",
+     "start": 66.9,
+     "end": 67.14
+    },
+    {
+     "text": "with",
+     "start": 67.14,
+     "end": 67.48
+    },
+    {
+     "text": "\"upgrade",
+     "start": 67.48,
+     "end": 68.44
+    },
+    {
+     "text": "to",
+     "start": 68.44,
+     "end": 68.72
+    },
+    {
+     "text": "continue,\"",
+     "start": 68.72,
+     "end": 69.48
+    }
+   ]
+  },
+  {
+   "i": 15,
+   "section": "chorus1",
+   "text": "click to cancel, I'm cancelling you.",
+   "start": 69.48,
+   "end": 74.74,
+   "words": [
+    {
+     "text": "click",
+     "start": 69.48,
+     "end": 70.6
+    },
+    {
+     "text": "to",
+     "start": 70.6,
+     "end": 71.14
+    },
+    {
+     "text": "cancel,",
+     "start": 71.14,
+     "end": 71.62
+    },
+    {
+     "text": "I'm",
+     "start": 71.94,
+     "end": 72.4
+    },
+    {
+     "text": "cancelling",
+     "start": 72.4,
+     "end": 73.6
+    },
+    {
+     "text": "you.",
+     "start": 73.92,
+     "end": 74.74
+    }
+   ]
+  },
+  {
+   "i": 16,
+   "section": "chorus1",
+   "text": "You said \"Buy now,\" but you meant \"for now,\"",
+   "start": 74.74,
+   "end": 79.04,
+   "words": [
+    {
+     "text": "You",
+     "start": 74.74,
+     "end": 75.94
+    },
+    {
+     "text": "said",
+     "start": 76.0,
+     "end": 76.34
+    },
+    {
+     "text": "\"Buy",
+     "start": 76.34,
+     "end": 76.6
+    },
+    {
+     "text": "now,\"",
+     "start": 76.6,
+     "end": 77.08
+    },
+    {
+     "text": "but",
+     "start": 77.26,
+     "end": 77.42
+    },
+    {
+     "text": "you",
+     "start": 77.42,
+     "end": 77.68
+    },
+    {
+     "text": "meant",
+     "start": 77.68,
+     "end": 78.14
+    },
+    {
+     "text": "\"for",
+     "start": 78.14,
+     "end": 78.5
+    },
+    {
+     "text": "now,\"",
+     "start": 78.5,
+     "end": 79.04
+    }
+   ]
+  },
+  {
+   "i": 17,
+   "section": "chorus1",
+   "text": "and my dog's breakfast is locked in a box on the ground.",
+   "start": 79.04,
+   "end": 83.56,
+   "words": [
+    {
+     "text": "and",
+     "start": 79.04,
+     "end": 79.38
+    },
+    {
+     "text": "my",
+     "start": 79.38,
+     "end": 79.62
+    },
+    {
+     "text": "dog's",
+     "start": 79.62,
+     "end": 79.96
+    },
+    {
+     "text": "breakfast",
+     "start": 79.96,
+     "end": 80.42
+    },
+    {
+     "text": "is",
+     "start": 80.42,
+     "end": 80.72
+    },
+    {
+     "text": "locked",
+     "start": 80.72,
+     "end": 81.24
+    },
+    {
+     "text": "in",
+     "start": 81.24,
+     "end": 81.62
+    },
+    {
+     "text": "a",
+     "start": 81.62,
+     "end": 81.84
+    },
+    {
+     "text": "box",
+     "start": 81.84,
+     "end": 82.32
+    },
+    {
+     "text": "on",
+     "start": 82.32,
+     "end": 82.66
+    },
+    {
+     "text": "the",
+     "start": 82.66,
+     "end": 82.88
+    },
+    {
+     "text": "ground.",
+     "start": 82.88,
+     "end": 83.56
+    }
+   ]
+  },
+  {
+   "i": 18,
+   "section": "chorus1",
+   "text": "I'm done with \"upgrade to continue,\"",
+   "start": 83.56,
+   "end": 86.92,
+   "words": [
+    {
+     "text": "I'm",
+     "start": 83.56,
+     "end": 84.28
+    },
+    {
+     "text": "done",
+     "start": 84.28,
+     "end": 84.52
+    },
+    {
+     "text": "with",
+     "start": 84.52,
+     "end": 84.86
+    },
+    {
+     "text": "\"upgrade",
+     "start": 84.86,
+     "end": 85.64
+    },
+    {
+     "text": "to",
+     "start": 85.64,
+     "end": 86.16
+    },
+    {
+     "text": "continue,\"",
+     "start": 86.16,
+     "end": 86.92
+    }
+   ]
+  },
+  {
+   "i": 19,
+   "section": "chorus1",
+   "text": "click to cancel, I'm cancelling you.",
+   "start": 87.3,
+   "end": 92.0,
+   "words": [
+    {
+     "text": "click",
+     "start": 87.3,
+     "end": 88.06
+    },
+    {
+     "text": "to",
+     "start": 88.06,
+     "end": 88.52
+    },
+    {
+     "text": "cancel,",
+     "start": 88.52,
+     "end": 89.04
+    },
+    {
+     "text": "I'm",
+     "start": 89.38,
+     "end": 89.96
+    },
+    {
+     "text": "cancelling",
+     "start": 89.96,
+     "end": 91.16
+    },
+    {
+     "text": "you.",
+     "start": 91.44,
+     "end": 92.0
+    }
+   ]
+  },
+  {
+   "i": 20,
+   "section": "verse2",
+   "text": "The car seats went cold, 'cause the heat is a tier,",
+   "start": 93.34,
+   "end": 97.38,
+   "words": [
+    {
+     "text": "The",
+     "start": 93.34,
+     "end": 94.1
+    },
+    {
+     "text": "car",
+     "start": 94.1,
+     "end": 94.3
+    },
+    {
+     "text": "seats",
+     "start": 94.3,
+     "end": 94.56
+    },
+    {
+     "text": "went",
+     "start": 94.56,
+     "end": 94.84
+    },
+    {
+     "text": "cold,",
+     "start": 94.84,
+     "end": 95.42
+    },
+    {
+     "text": "'cause",
+     "start": 95.42,
+     "end": 95.68
+    },
+    {
+     "text": "the",
+     "start": 95.68,
+     "end": 95.9
+    },
+    {
+     "text": "heat",
+     "start": 95.9,
+     "end": 96.44
+    },
+    {
+     "text": "is",
+     "start": 96.44,
+     "end": 96.88
+    },
+    {
+     "text": "a",
+     "start": 96.88,
+     "end": 97.32
+    },
+    {
+     "text": "tier,",
+     "start": 97.32,
+     "end": 97.38
+    }
+   ]
+  },
+  {
+   "i": 21,
+   "section": "verse2",
+   "text": "and the speed is a tier, so I crawled in first gear.",
+   "start": 97.72,
+   "end": 101.96,
+   "words": [
+    {
+     "text": "and",
+     "start": 97.72,
+     "end": 97.86
+    },
+    {
+     "text": "the",
+     "start": 97.86,
+     "end": 98.06
+    },
+    {
+     "text": "speed",
+     "start": 98.06,
+     "end": 98.44
+    },
+    {
+     "text": "is",
+     "start": 98.44,
+     "end": 99.06
+    },
+    {
+     "text": "a",
+     "start": 99.06,
+     "end": 99.26
+    },
+    {
+     "text": "tier,",
+     "start": 99.26,
+     "end": 99.64
+    },
+    {
+     "text": "so",
+     "start": 99.74,
+     "end": 99.98
+    },
+    {
+     "text": "I",
+     "start": 99.98,
+     "end": 100.22
+    },
+    {
+     "text": "crawled",
+     "start": 100.22,
+     "end": 100.92
+    },
+    {
+     "text": "in",
+     "start": 100.92,
+     "end": 101.14
+    },
+    {
+     "text": "first",
+     "start": 101.14,
+     "end": 101.54
+    },
+    {
+     "text": "gear.",
+     "start": 101.54,
+     "end": 101.96
+    }
+   ]
+  },
+  {
+   "i": 22,
+   "section": "verse2",
+   "text": "I stopped to get gas, and the car drove away,",
+   "start": 102.34,
+   "end": 106.12,
+   "words": [
+    {
+     "text": "I",
+     "start": 102.34,
+     "end": 102.44
+    },
+    {
+     "text": "stopped",
+     "start": 102.44,
+     "end": 102.86
+    },
+    {
+     "text": "to",
+     "start": 102.86,
+     "end": 103.28
+    },
+    {
+     "text": "get",
+     "start": 103.28,
+     "end": 103.54
+    },
+    {
+     "text": "gas,",
+     "start": 103.54,
+     "end": 104.18
+    },
+    {
+     "text": "and",
+     "start": 104.18,
+     "end": 104.4
+    },
+    {
+     "text": "the",
+     "start": 104.4,
+     "end": 104.62
+    },
+    {
+     "text": "car",
+     "start": 104.62,
+     "end": 105.1
+    },
+    {
+     "text": "drove",
+     "start": 105.1,
+     "end": 105.54
+    },
+    {
+     "text": "away,",
+     "start": 105.54,
+     "end": 106.12
+    }
+   ]
+  },
+  {
+   "i": 23,
+   "section": "verse2",
+   "text": "Ford filed a patent for that, by the way.",
+   "start": 107.04,
+   "end": 110.4,
+   "words": [
+    {
+     "text": "Ford",
+     "start": 107.04,
+     "end": 107.48
+    },
+    {
+     "text": "filed",
+     "start": 107.48,
+     "end": 107.98
+    },
+    {
+     "text": "a",
+     "start": 107.98,
+     "end": 108.24
+    },
+    {
+     "text": "patent",
+     "start": 108.24,
+     "end": 108.58
+    },
+    {
+     "text": "for",
+     "start": 108.58,
+     "end": 108.96
+    },
+    {
+     "text": "that,",
+     "start": 108.96,
+     "end": 109.36
+    },
+    {
+     "text": "by",
+     "start": 109.46,
+     "end": 109.82
+    },
+    {
+     "text": "the",
+     "start": 109.82,
+     "end": 110.0
+    },
+    {
+     "text": "way.",
+     "start": 110.0,
+     "end": 110.4
+    }
+   ]
+  },
+  {
+   "i": 24,
+   "section": "verse2",
+   "text": "I walked home in the rain, and the doorbell said, \"Who?\"",
+   "start": 110.4,
+   "end": 114.04,
+   "words": [
+    {
+     "text": "I",
+     "start": 110.4,
+     "end": 110.9
+    },
+    {
+     "text": "walked",
+     "start": 110.9,
+     "end": 111.2
+    },
+    {
+     "text": "home",
+     "start": 111.2,
+     "end": 111.76
+    },
+    {
+     "text": "in",
+     "start": 111.76,
+     "end": 111.92
+    },
+    {
+     "text": "the",
+     "start": 111.92,
+     "end": 112.02
+    },
+    {
+     "text": "rain,",
+     "start": 112.02,
+     "end": 112.3
+    },
+    {
+     "text": "and",
+     "start": 112.3,
+     "end": 112.46
+    },
+    {
+     "text": "the",
+     "start": 112.46,
+     "end": 112.6
+    },
+    {
+     "text": "doorbell",
+     "start": 112.6,
+     "end": 113.02
+    },
+    {
+     "text": "said,",
+     "start": 113.02,
+     "end": 113.44
+    },
+    {
+     "text": "\"Who?\"",
+     "start": 113.44,
+     "end": 114.04
+    }
+   ]
+  },
+  {
+   "i": 25,
+   "section": "verse2",
+   "text": "so I climbed through my window, and the cops came too.",
+   "start": 114.04,
+   "end": 118.56,
+   "words": [
+    {
+     "text": "so",
+     "start": 114.04,
+     "end": 115.1
+    },
+    {
+     "text": "I",
+     "start": 115.1,
+     "end": 115.24
+    },
+    {
+     "text": "climbed",
+     "start": 115.24,
+     "end": 115.52
+    },
+    {
+     "text": "through",
+     "start": 115.52,
+     "end": 115.68
+    },
+    {
+     "text": "my",
+     "start": 115.68,
+     "end": 115.82
+    },
+    {
+     "text": "window,",
+     "start": 115.82,
+     "end": 116.28
+    },
+    {
+     "text": "and",
+     "start": 116.28,
+     "end": 116.76
+    },
+    {
+     "text": "the",
+     "start": 116.76,
+     "end": 116.86
+    },
+    {
+     "text": "cops",
+     "start": 116.86,
+     "end": 117.3
+    },
+    {
+     "text": "came",
+     "start": 117.3,
+     "end": 118.1
+    },
+    {
+     "text": "too.",
+     "start": 118.1,
+     "end": 118.56
+    }
+   ]
+  },
+  {
+   "i": 26,
+   "section": "verse2",
+   "text": "Pancake was waiting with his nose on the box,",
+   "start": 119.2,
+   "end": 123.14,
+   "words": [
+    {
+     "text": "Pancake",
+     "start": 119.2,
+     "end": 119.76
+    },
+    {
+     "text": "was",
+     "start": 119.76,
+     "end": 120.1
+    },
+    {
+     "text": "waiting",
+     "start": 120.1,
+     "end": 120.54
+    },
+    {
+     "text": "with",
+     "start": 120.54,
+     "end": 120.96
+    },
+    {
+     "text": "his",
+     "start": 120.96,
+     "end": 121.22
+    },
+    {
+     "text": "nose",
+     "start": 121.22,
+     "end": 121.52
+    },
+    {
+     "text": "on",
+     "start": 121.52,
+     "end": 121.78
+    },
+    {
+     "text": "the",
+     "start": 121.78,
+     "end": 121.96
+    },
+    {
+     "text": "box,",
+     "start": 121.96,
+     "end": 123.14
+    }
+   ]
+  },
+  {
+   "i": 27,
+   "section": "verse2",
+   "text": "and my grandpa's old hammer doesn't care about locks.",
+   "start": 123.62,
+   "end": 128.26,
+   "words": [
+    {
+     "text": "and",
+     "start": 123.62,
+     "end": 123.9
+    },
+    {
+     "text": "my",
+     "start": 123.9,
+     "end": 124.18
+    },
+    {
+     "text": "grandpa's",
+     "start": 124.18,
+     "end": 125.1
+    },
+    {
+     "text": "old",
+     "start": 125.1,
+     "end": 125.46
+    },
+    {
+     "text": "hammer",
+     "start": 125.46,
+     "end": 125.92
+    },
+    {
+     "text": "doesn't",
+     "start": 125.92,
+     "end": 126.56
+    },
+    {
+     "text": "care",
+     "start": 126.56,
+     "end": 126.92
+    },
+    {
+     "text": "about",
+     "start": 126.92,
+     "end": 127.48
+    },
+    {
+     "text": "locks.",
+     "start": 127.48,
+     "end": 128.26
+    }
+   ]
+  },
+  {
+   "i": 28,
+   "section": "swing",
+   "text": "One swing, and the lid flew off,",
+   "start": 128.26,
+   "end": 130.82,
+   "words": [
+    {
+     "text": "One",
+     "start": 128.26,
+     "end": 129.2
+    },
+    {
+     "text": "swing,",
+     "start": 129.2,
+     "end": 129.58
+    },
+    {
+     "text": "and",
+     "start": 129.58,
+     "end": 129.74
+    },
+    {
+     "text": "the",
+     "start": 129.74,
+     "end": 129.86
+    },
+    {
+     "text": "lid",
+     "start": 129.86,
+     "end": 130.06
+    },
+    {
+     "text": "flew",
+     "start": 130.06,
+     "end": 130.32
+    },
+    {
+     "text": "off,",
+     "start": 130.32,
+     "end": 130.82
+    }
+   ]
+  },
+  {
+   "i": 29,
+   "section": "swing",
+   "text": "Pancake ate till he'd had enough.",
+   "start": 130.82,
+   "end": 132.72,
+   "words": [
+    {
+     "text": "Pancake",
+     "start": 130.82,
+     "end": 131.46
+    },
+    {
+     "text": "ate",
+     "start": 131.46,
+     "end": 131.72
+    },
+    {
+     "text": "till",
+     "start": 131.72,
+     "end": 131.92
+    },
+    {
+     "text": "he'd",
+     "start": 131.92,
+     "end": 132.08
+    },
+    {
+     "text": "had",
+     "start": 132.08,
+     "end": 132.4
+    },
+    {
+     "text": "enough.",
+     "start": 132.4,
+     "end": 132.72
+    }
+   ]
+  },
+  {
+   "i": 30,
+   "section": "swing",
+   "text": "I picked up the phone with the hammer in my hand,",
+   "start": 132.72,
+   "end": 134.96,
+   "words": [
+    {
+     "text": "I",
+     "start": 132.72,
+     "end": 133.02
+    },
+    {
+     "text": "picked",
+     "start": 133.02,
+     "end": 133.36
+    },
+    {
+     "text": "up",
+     "start": 133.36,
+     "end": 133.52
+    },
+    {
+     "text": "the",
+     "start": 133.52,
+     "end": 133.62
+    },
+    {
+     "text": "phone",
+     "start": 133.62,
+     "end": 133.88
+    },
+    {
+     "text": "with",
+     "start": 133.88,
+     "end": 134.08
+    },
+    {
+     "text": "the",
+     "start": 134.08,
+     "end": 134.18
+    },
+    {
+     "text": "hammer",
+     "start": 134.18,
+     "end": 134.44
+    },
+    {
+     "text": "in",
+     "start": 134.44,
+     "end": 134.62
+    },
+    {
+     "text": "my",
+     "start": 134.62,
+     "end": 134.72
+    },
+    {
+     "text": "hand,",
+     "start": 134.72,
+     "end": 134.96
+    }
+   ]
+  },
+  {
+   "i": 31,
+   "section": "swing",
+   "text": "I'm cancelling every last thing on a plan.",
+   "start": 134.96,
+   "end": 137.64,
+   "words": [
+    {
+     "text": "I'm",
+     "start": 134.96,
+     "end": 135.28
+    },
+    {
+     "text": "cancelling",
+     "start": 135.28,
+     "end": 135.82
+    },
+    {
+     "text": "every",
+     "start": 135.82,
+     "end": 136.04
+    },
+    {
+     "text": "last",
+     "start": 136.04,
+     "end": 136.32
+    },
+    {
+     "text": "thing",
+     "start": 136.32,
+     "end": 136.6
+    },
+    {
+     "text": "on",
+     "start": 136.6,
+     "end": 136.78
+    },
+    {
+     "text": "a",
+     "start": 136.78,
+     "end": 136.86
+    },
+    {
+     "text": "plan.",
+     "start": 136.86,
+     "end": 137.64
+    }
+   ]
+  },
+  {
+   "i": 32,
+   "section": "cancel",
+   "text": "They passed \"Click to Cancel,\" and a court said no,",
+   "start": 137.64,
+   "end": 142.86,
+   "words": [
+    {
+     "text": "They",
+     "start": 137.64,
+     "end": 138.84
+    },
+    {
+     "text": "passed",
+     "start": 138.96,
+     "end": 139.48
+    },
+    {
+     "text": "\"Click",
+     "start": 139.48,
+     "end": 139.82
+    },
+    {
+     "text": "to",
+     "start": 139.82,
+     "end": 140.26
+    },
+    {
+     "text": "Cancel,\"",
+     "start": 140.26,
+     "end": 141.0
+    },
+    {
+     "text": "and",
+     "start": 141.0,
+     "end": 141.54
+    },
+    {
+     "text": "a",
+     "start": 141.54,
+     "end": 141.74
+    },
+    {
+     "text": "court",
+     "start": 141.74,
+     "end": 142.02
+    },
+    {
+     "text": "said",
+     "start": 142.02,
+     "end": 142.42
+    },
+    {
+     "text": "no,",
+     "start": 142.42,
+     "end": 142.86
+    }
+   ]
+  },
+  {
+   "i": 33,
+   "section": "cancel",
+   "text": "so it's page after page with nowhere to go.",
+   "start": 142.86,
+   "end": 147.34,
+   "words": [
+    {
+     "text": "so",
+     "start": 142.86,
+     "end": 143.3
+    },
+    {
+     "text": "it's",
+     "start": 143.3,
+     "end": 143.64
+    },
+    {
+     "text": "page",
+     "start": 143.64,
+     "end": 144.26
+    },
+    {
+     "text": "after",
+     "start": 144.26,
+     "end": 144.58
+    },
+    {
+     "text": "page",
+     "start": 144.58,
+     "end": 145.12
+    },
+    {
+     "text": "with",
+     "start": 145.12,
+     "end": 145.62
+    },
+    {
+     "text": "nowhere",
+     "start": 145.62,
+     "end": 146.3
+    },
+    {
+     "text": "to",
+     "start": 146.3,
+     "end": 146.86
+    },
+    {
+     "text": "go.",
+     "start": 146.86,
+     "end": 147.34
+    }
+   ]
+  },
+  {
+   "i": 34,
+   "section": "cancel",
+   "text": "Amazon named its cancel page \"Iliad,\"",
+   "start": 147.34,
+   "end": 151.7,
+   "words": [
+    {
+     "text": "Amazon",
+     "start": 147.34,
+     "end": 148.34
+    },
+    {
+     "text": "named",
+     "start": 148.34,
+     "end": 149.1
+    },
+    {
+     "text": "its",
+     "start": 149.1,
+     "end": 149.34
+    },
+    {
+     "text": "cancel",
+     "start": 149.34,
+     "end": 149.78
+    },
+    {
+     "text": "page",
+     "start": 149.78,
+     "end": 150.46
+    },
+    {
+     "text": "\"Iliad,\"",
+     "start": 151.22,
+     "end": 151.7
+    }
+   ]
+  },
+  {
+   "i": 35,
+   "section": "cancel",
+   "text": "the most honest name that a cancel page had.",
+   "start": 151.7,
+   "end": 156.2,
+   "words": [
+    {
+     "text": "the",
+     "start": 151.7,
+     "end": 151.96
+    },
+    {
+     "text": "most",
+     "start": 151.96,
+     "end": 152.52
+    },
+    {
+     "text": "honest",
+     "start": 152.52,
+     "end": 153.34
+    },
+    {
+     "text": "name",
+     "start": 153.34,
+     "end": 154.1
+    },
+    {
+     "text": "that",
+     "start": 154.1,
+     "end": 154.5
+    },
+    {
+     "text": "a",
+     "start": 154.5,
+     "end": 154.74
+    },
+    {
+     "text": "cancel",
+     "start": 154.74,
+     "end": 155.16
+    },
+    {
+     "text": "page",
+     "start": 155.16,
+     "end": 155.8
+    },
+    {
+     "text": "had.",
+     "start": 155.8,
+     "end": 156.2
+    }
+   ]
+  },
+  {
+   "i": 36,
+   "section": "hold",
+   "text": "Then the hold music stopped, and the voice came through,",
+   "start": 156.2,
+   "end": 160.24,
+   "words": [
+    {
+     "text": "Then",
+     "start": 156.2,
+     "end": 156.66
+    },
+    {
+     "text": "the",
+     "start": 156.66,
+     "end": 156.88
+    },
+    {
+     "text": "hold",
+     "start": 156.88,
+     "end": 157.2
+    },
+    {
+     "text": "music",
+     "start": 157.2,
+     "end": 157.8
+    },
+    {
+     "text": "stopped,",
+     "start": 157.8,
+     "end": 158.32
+    },
+    {
+     "text": "and",
+     "start": 158.32,
+     "end": 158.86
+    },
+    {
+     "text": "the",
+     "start": 158.86,
+     "end": 159.0
+    },
+    {
+     "text": "voice",
+     "start": 159.0,
+     "end": 159.4
+    },
+    {
+     "text": "came",
+     "start": 159.4,
+     "end": 159.82
+    },
+    {
+     "text": "through,",
+     "start": 159.82,
+     "end": 160.24
+    }
+   ]
+  },
+  {
+   "i": 37,
+   "section": "hold",
+   "text": "the one from my pillow, and it said, \"Is that you?\"",
+   "start": 160.24,
+   "end": 164.94,
+   "words": [
+    {
+     "text": "the",
+     "start": 160.24,
+     "end": 161.12
+    },
+    {
+     "text": "one",
+     "start": 161.12,
+     "end": 161.6
+    },
+    {
+     "text": "from",
+     "start": 161.6,
+     "end": 161.96
+    },
+    {
+     "text": "my",
+     "start": 161.96,
+     "end": 162.24
+    },
+    {
+     "text": "pillow,",
+     "start": 162.24,
+     "end": 162.74
+    },
+    {
+     "text": "and",
+     "start": 162.74,
+     "end": 163.16
+    },
+    {
+     "text": "it",
+     "start": 163.16,
+     "end": 163.3
+    },
+    {
+     "text": "said,",
+     "start": 163.3,
+     "end": 163.7
+    },
+    {
+     "text": "\"Is",
+     "start": 164.18,
+     "end": 164.24
+    },
+    {
+     "text": "that",
+     "start": 164.24,
+     "end": 164.5
+    },
+    {
+     "text": "you?\"",
+     "start": 164.5,
+     "end": 164.94
+    }
+   ]
+  },
+  {
+   "i": 38,
+   "section": "final",
+   "text": "You said \"Buy now,\" but I'm good for now,",
+   "start": 166.46,
+   "end": 170.22,
+   "words": [
+    {
+     "text": "You",
+     "start": 166.46,
+     "end": 167.28
+    },
+    {
+     "text": "said",
+     "start": 167.28,
+     "end": 167.66
+    },
+    {
+     "text": "\"Buy",
+     "start": 167.66,
+     "end": 167.94
+    },
+    {
+     "text": "now,\"",
+     "start": 167.94,
+     "end": 168.36
+    },
+    {
+     "text": "but",
+     "start": 168.6,
+     "end": 168.82
+    },
+    {
+     "text": "I'm",
+     "start": 168.82,
+     "end": 169.1
+    },
+    {
+     "text": "good",
+     "start": 169.1,
+     "end": 169.42
+    },
+    {
+     "text": "for",
+     "start": 169.42,
+     "end": 169.84
+    },
+    {
+     "text": "now,",
+     "start": 169.84,
+     "end": 170.22
+    }
+   ]
+  },
+  {
+   "i": 39,
+   "section": "final",
+   "text": "I got a paper 1984 they can't take down.",
+   "start": 170.22,
+   "end": 174.74,
+   "words": [
+    {
+     "text": "I",
+     "start": 170.22,
+     "end": 170.66
+    },
+    {
+     "text": "got",
+     "start": 170.66,
+     "end": 170.98
+    },
+    {
+     "text": "a",
+     "start": 170.98,
+     "end": 171.22
+    },
+    {
+     "text": "paper",
+     "start": 171.22,
+     "end": 171.72
+    },
+    {
+     "text": "1984",
+     "start": 171.9,
+     "end": 172.76
+    },
+    {
+     "text": "they",
+     "start": 173.3,
+     "end": 173.42
+    },
+    {
+     "text": "can't",
+     "start": 173.42,
+     "end": 173.9
+    },
+    {
+     "text": "take",
+     "start": 173.9,
+     "end": 174.22
+    },
+    {
+     "text": "down.",
+     "start": 174.22,
+     "end": 174.74
+    }
+   ]
+  },
+  {
+   "i": 40,
+   "section": "final",
+   "text": "I'm done with \"upgrade to continue,\"",
+   "start": 174.74,
+   "end": 178.24,
+   "words": [
+    {
+     "text": "I'm",
+     "start": 174.74,
+     "end": 175.6
+    },
+    {
+     "text": "done",
+     "start": 175.6,
+     "end": 175.88
+    },
+    {
+     "text": "with",
+     "start": 175.88,
+     "end": 176.24
+    },
+    {
+     "text": "\"upgrade",
+     "start": 176.24,
+     "end": 177.18
+    },
+    {
+     "text": "to",
+     "start": 177.18,
+     "end": 177.52
+    },
+    {
+     "text": "continue,\"",
+     "start": 177.52,
+     "end": 178.24
+    }
+   ]
+  },
+  {
+   "i": 41,
+   "section": "final",
+   "text": "click to cancel, I cancelled you.",
+   "start": 178.24,
+   "end": 183.34,
+   "words": [
+    {
+     "text": "click",
+     "start": 178.24,
+     "end": 179.38
+    },
+    {
+     "text": "to",
+     "start": 179.38,
+     "end": 179.88
+    },
+    {
+     "text": "cancel,",
+     "start": 179.88,
+     "end": 180.38
+    },
+    {
+     "text": "I",
+     "start": 180.68,
+     "end": 181.26
+    },
+    {
+     "text": "cancelled",
+     "start": 181.26,
+     "end": 182.46
+    },
+    {
+     "text": "you.",
+     "start": 182.72,
+     "end": 183.34
+    }
+   ]
+  },
+  {
+   "i": 42,
+   "section": "final",
+   "text": "You said \"Buy now,\" but I'm good for now,",
+   "start": 183.34,
+   "end": 187.76,
+   "words": [
+    {
+     "text": "You",
+     "start": 183.34,
+     "end": 184.54
+    },
+    {
+     "text": "said",
+     "start": 184.78,
+     "end": 185.12
+    },
+    {
+     "text": "\"Buy",
+     "start": 185.12,
+     "end": 185.4
+    },
+    {
+     "text": "now,\"",
+     "start": 185.4,
+     "end": 185.8
+    },
+    {
+     "text": "but",
+     "start": 185.96,
+     "end": 186.26
+    },
+    {
+     "text": "I'm",
+     "start": 186.26,
+     "end": 186.52
+    },
+    {
+     "text": "good",
+     "start": 186.52,
+     "end": 186.86
+    },
+    {
+     "text": "for",
+     "start": 186.86,
+     "end": 187.28
+    },
+    {
+     "text": "now,",
+     "start": 187.28,
+     "end": 187.76
+    }
+   ]
+  },
+  {
+   "i": 43,
+   "section": "final",
+   "text": "and Pancake eats breakfast from a bowl on the ground.",
+   "start": 187.76,
+   "end": 192.16,
+   "words": [
+    {
+     "text": "and",
+     "start": 187.76,
+     "end": 188.1
+    },
+    {
+     "text": "Pancake",
+     "start": 188.1,
+     "end": 188.84
+    },
+    {
+     "text": "eats",
+     "start": 188.84,
+     "end": 189.22
+    },
+    {
+     "text": "breakfast",
+     "start": 189.22,
+     "end": 189.66
+    },
+    {
+     "text": "from",
+     "start": 189.66,
+     "end": 190.3
+    },
+    {
+     "text": "a",
+     "start": 190.3,
+     "end": 190.56
+    },
+    {
+     "text": "bowl",
+     "start": 190.56,
+     "end": 191.02
+    },
+    {
+     "text": "on",
+     "start": 191.02,
+     "end": 191.46
+    },
+    {
+     "text": "the",
+     "start": 191.46,
+     "end": 191.64
+    },
+    {
+     "text": "ground.",
+     "start": 191.64,
+     "end": 192.16
+    }
+   ]
+  },
+  {
+   "i": 44,
+   "section": "final",
+   "text": "I'm done with \"upgrade to continue,\"",
+   "start": 192.16,
+   "end": 195.66,
+   "words": [
+    {
+     "text": "I'm",
+     "start": 192.16,
+     "end": 193.06
+    },
+    {
+     "text": "done",
+     "start": 193.06,
+     "end": 193.2
+    },
+    {
+     "text": "with",
+     "start": 193.2,
+     "end": 193.58
+    },
+    {
+     "text": "\"upgrade",
+     "start": 193.58,
+     "end": 194.44
+    },
+    {
+     "text": "to",
+     "start": 194.44,
+     "end": 194.88
+    },
+    {
+     "text": "continue,\"",
+     "start": 194.88,
+     "end": 195.66
+    }
+   ]
+  },
+  {
+   "i": 45,
+   "section": "final",
+   "text": "click to cancel, I cancelled you.",
+   "start": 195.66,
+   "end": 204.02,
+   "words": [
+    {
+     "text": "click",
+     "start": 195.66,
+     "end": 196.8
+    },
+    {
+     "text": "to",
+     "start": 196.8,
+     "end": 197.26
+    },
+    {
+     "text": "cancel,",
+     "start": 197.26,
+     "end": 197.88
+    },
+    {
+     "text": "I",
+     "start": 197.88,
+     "end": 199.08
+    },
+    {
+     "text": "cancelled",
+     "start": 199.46,
+     "end": 200.66
+    },
+    {
+     "text": "you.",
+     "start": 203.02,
+     "end": 204.02
+    }
+   ]
+  }
+ ]
+}

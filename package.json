@@ -1,0 +1,31 @@
+{
+  "name": "buy-now-for-now",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Buy Now, For Now - early 2000s 3D music video (Remotion + Three.js)",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts Main out/buy-now-for-now.mp4 --gl=angle",
+    "still": "node scripts/still.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
+    "@remotion/bundler": "4.0.541",
+    "@remotion/cli": "4.0.541",
+    "@remotion/renderer": "4.0.541",
+    "@remotion/three": "4.0.541",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "remotion": "4.0.541",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/three": "0.187.0",
+    "opentype.js": "2.0.0",
+    "typescript": "^5.6.0"
+  }
+}

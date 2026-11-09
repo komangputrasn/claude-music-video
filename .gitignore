@@ -1,0 +1,11 @@
+# dependencies
+node_modules/
+
+# renders and preview frames (regenerate with `npm run render` / `node scripts/still.mjs`)
+out/
+.preview/
+
+# local machine settings
+.claude/settings.local.json
+.DS_Store
+*.log
