@@ -5,10 +5,10 @@
  *                   Price/plan/lock words flash authRed; in the final chorus "good / own / paper / bowl / ground" are
  *                   dawnGold. Sits in the bottom bar, slightly overlapping the picture.
  *
- * Scenes do NOT render captions or bars. Keep important picture content inside y ∈ [138, 900] px and away from the
- * lower-left ~1250×60 px of the picture (the caption block's first row overlaps the picture bottom).
+ * Scenes do NOT render captions or bars. Keep important picture content inside y ∈ [138, 920] px and away from the
+ * lower-left ~1350×20 px of the picture (the caption block's first row overlaps the picture bottom by 12 px).
  *
- *   <SilCaptions time?={songSeconds} fontSize?={38} left?={120} bottom?={42} maxWidth?={1220}/>
+ *   <SilCaptions time?={songSeconds} fontSize?={38} left?={120} top?={930} maxWidth?={1320}/>   (balanced wrapping)
  *   silCaptionLineAt(t) → the lyric line shown at t (or null)
  *   silWordColor(word, section, sinceStart) → the CSS colour of a caption word
  */
@@ -49,8 +49,8 @@ export const silCaptionLineAt = (t: number): Line | null => {
   return null;
 };
 
-export const SilCaptions: React.FC<{time?: number; fontSize?: number; left?: number; bottom?: number; maxWidth?: number}> = ({
-  time, fontSize = 38, left = 120, bottom = 42, maxWidth = 1220,
+export const SilCaptions: React.FC<{time?: number; fontSize?: number; left?: number; top?: number; maxWidth?: number}> = ({
+  time, fontSize = 38, left = 120, top = LETTERBOX.bottom - 12, maxWidth = 1320,
 }) => {
   const songT = useSongTime();
   const t = time ?? songT;
@@ -62,18 +62,16 @@ export const SilCaptions: React.FC<{time?: number; fontSize?: number; left?: num
         style={{
           position: 'absolute',
           left,
-          bottom,
+          top,
           maxWidth,
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'baseline',
-          columnGap: fontSize * 0.42,
-          rowGap: fontSize * 0.18,
+          textAlign: 'left',
+          textWrap: 'balance',
           fontFamily: SFONTS.futura,
           fontWeight: 500,
           fontSize,
-          lineHeight: 1.12,
+          lineHeight: 1.18,
           letterSpacing: '0.15em',
+          wordSpacing: '0.12em',
           textTransform: 'uppercase',
           textShadow: '0 0 14px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.9)',
         }}
@@ -81,9 +79,12 @@ export const SilCaptions: React.FC<{time?: number; fontSize?: number; left?: num
         {L.words.map((w, i) => {
           const on = t >= w.start;
           return (
-            <span key={i} style={{visibility: on ? 'visible' : 'hidden', color: silWordColor(w.text, L.section, t - w.start), whiteSpace: 'nowrap'}}>
-              {w.text.replace(/["“”]/g, '')}
-            </span>
+            <React.Fragment key={i}>
+              {i > 0 ? ' ' : null}
+              <span style={{visibility: on ? 'visible' : 'hidden', color: silWordColor(w.text, L.section, t - w.start)}}>
+                {w.text.replace(/["“”]/g, '')}
+              </span>
+            </React.Fragment>
           );
         })}
       </div>

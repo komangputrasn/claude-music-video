@@ -51,7 +51,7 @@ export const cameraFovForVisible = (visibleFovDeg: number) => {
 
 /** Lyric words that flash authRed in captions (prices, plans, locks). Lower-case, punctuation stripped. */
 export const RED_WORDS = ['buy', 'plan', 'upgrade', 'cancel', 'cancelling', 'cancelled', 'locked', 'tier', 'plus', 'patent', 'fee',
-  'declined', 'price', 'members', 'continue'] as const;
+  'declined'] as const;
 /** Lyric words that appear in dawnGold — ONLY in the final chorus. */
 export const GOLD_WORDS = ['good', 'own', 'paper', 'bowl', 'ground'] as const;
 

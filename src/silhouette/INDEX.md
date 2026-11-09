@@ -15,6 +15,7 @@ src/silhouette/
     SilCast.tsx            <SilGuy hood>, <SilPancake>
     Iris.tsx               <Iris>, IRIS_GLSL, makeIrisMaterial(), setIrisUniforms()
     SilStage.tsx           <SilStage>, CameraRig (re-export), SIL_BLOOM, SIL_LENS
+    Crowd.tsx              <Crowd> instanced crowds of identical hooded silhouettes, crowdLayout()
     atmos/  tenure/  sets/  props/    (modules: see §3–§6)
   overlays/SilOverlays.tsx <Letterbox>, <SilCaptions>, <SilOverlays> (mounted by Layout overlays="silhouette")
   scenes/<Id>/index.tsx    one folder per scene (named export <Id>), plus NOTES.md shot list
@@ -104,6 +105,15 @@ too (unless silKeep). `<SilPancake pose rim? color? {...group}/>` — keep him i
 glint?={true} opacity? {...group}/>` — flat disc facing +Z. `open` 0→1 opens it from a pinpoint; `pupil` dilates;
 `time` drives blade rotation + a slow scan sweep; `flicker` 0..1 = failing (Final). `IRIS_GLSL` exports the drawing
 function `vec4 irisLayers(vec2 p, float open, float pupil, float time)` for instanced iris walls.
+
+### `<Crowd>` — identical hooded silhouettes (Chorus1, Final)
+`<Crowd count?={200} seed? area?={[30,40]} spacing?={1.3} facing?={0} facingJitter?={0.15} time? sway?={1} lookUp?={0}
+lookUpSpread?={0.6} hood?={1} exclude?={[[x,z,r]]} rim? color? fog? {...group}/>` — instanced (3 draw calls for
+hundreds), jittered grid over `area` centred on the origin, everyone faces `facing` (0 = +Z). `lookUp` 0..1 tilts heads
+up in a staggered wave (Final). `exclude` clears circles (a lane for the Guy walking against them — give him a rim or a
+light behind him so he separates from the mass). `crowdLayout(props)` returns the slots. Verified:
+`.preview/out/silplay-CrowdTest/` (`silplay CrowdTest`; f150/f195 show a red iris failing above a crowd — a dead iris
+leaves its black housing disc: a "black sun").
 
 ### Overlays (already global — scenes draw neither bars nor captions)
 `<Letterbox/>` (138 px bars), `<SilCaptions/>` (lower-left Futura, words appear as sung; red/gold word colouring),
