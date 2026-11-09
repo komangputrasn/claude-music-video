@@ -1,19 +1,22 @@
 /**
  * <LightPool> — a soft pool of light on the ground plus a faint column of lit haze rising from it
  * (DESIGN-silhouette §3/§4: the red pool under the feeder monolith; the dawnGold pool around Pancake's bowl in Final —
- * gold ONLY from the Final chorus on). Origin = the pool's centre ON THE GROUND (y = 0); the disc floats 4 mm up.
- * Additive, depthWrite off, fog-free. Front-facing only (does not show up upside-down in <WetGround> reflections; the
- * haze column does reflect).
+ * gold ONLY from the Final chorus on). Origin = the pool's centre ON THE GROUND (y = 0); the disc floats 8 mm up.
+ * Additive, depthWrite off, fog-free. The disc is front-facing only (it does not show up upside-down in <WetGround>
+ * reflections; the haze column does reflect).
  *
  *   <LightPool position?={[0, 0, 0]} radius?={2} color?={S.bone} intensity?={1} haze?={0.35} hazeHeight?={radius * 1.4}
- *              softness?={0.7} breakup?={0.3} seed?={1} {...group}/>
+ *              hazeRadius?={radius * 0.6} softness?={0.7} breakup?={0.3} seed?={1} {...group}/>
  *
  *   radius      metres to where the light has fully died
  *   intensity   HDR multiplier of the pool centre. ~1 = bright but under bloom for bone; gold/red pools: 1–1.8
  *               (red ≤ 2). A pool is a big surface: let only its very centre bloom, if anything.
  *   haze        0..1 brightness of the soft lit-fog column above the pool (gives silhouettes standing in it a backlit
  *               halo when seen from a low camera). 0 = disc only.
- *   hazeHeight  height of that column (m)
+ *   hazeHeight  height of that column (m)       hazeRadius  its radius at the floor (m; it narrows to 60 % at the top)
+ *               The haze is a ray-marched volume (the <LightShaft> shader): silhouettes standing in it stay pure
+ *               black, but a BIG opaque object (a monolith) that straddles the haze's back surface cuts it with a hard
+ *               edge — keep hazeRadius small enough that the column stands clear of large architecture.
  *   softness    0..1 fraction of the radius that is falloff (1 = pure gradient, 0.3 = a hard-edged spotlight disc)
  *   breakup     0..1 concrete/noise variation inside the pool (no CG-perfect gradient)
  *
@@ -25,6 +28,7 @@ import React, {useLayoutEffect, useMemo} from 'react';
 import * as THREE from 'three';
 import {S} from '../palette';
 import {atmosNoise, GroupProps} from './shared';
+import {getShaftHull, makeShaftVolumeMaterial} from './LightShaft';
 
 export type LightPoolProps = GroupProps & {
   radius?: number;
@@ -32,6 +36,7 @@ export type LightPoolProps = GroupProps & {
   intensity?: number;
   haze?: number;
   hazeHeight?: number;
+  hazeRadius?: number;
   softness?: number;
   breakup?: number;
   seed?: number;
@@ -58,48 +63,15 @@ void main() {
   gl_FragColor = vec4(uColor * max(m, 0.0), 1.0);
 }`;
 
-const HAZE_VERT = /* glsl */ `
-varying float vH;
-varying vec3 vN;
-varying vec3 vV;
-void main() {
-  vH = position.y;
-  vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  vN = normalize(normalMatrix * vec3(position.x, 0.0, position.z));
-  vV = -mv.xyz;
-  gl_Position = projectionMatrix * mv;
-}`;
-
-const HAZE_FRAG = /* glsl */ `
-uniform vec3 uColor;
-uniform float uHeight;
-varying float vH;
-varying vec3 vN;
-varying vec3 vV;
-void main() {
-  float facing = abs(dot(normalize(vN), normalize(vV)));
-  float h = clamp(vH / uHeight, 0.0, 1.0);
-  float m = pow(facing, 2.2) * pow(1.0 - h, 2.2) * smoothstep(0.0, 0.04, h);
-  gl_FragColor = vec4(uColor * m, 1.0);
-}`;
-
 const DISC = (() => {
   const g = new THREE.CircleGeometry(1, 72);
   return g;
 })();
-let hazeGeo: THREE.CylinderGeometry | null = null;
-const getHaze = () => {
-  if (!hazeGeo) {
-    hazeGeo = new THREE.CylinderGeometry(0.62, 0.9, 1, 64, 1, true);
-    hazeGeo.translate(0, 0.5, 0);
-  }
-  return hazeGeo;
-};
-
 export const LightPool: React.FC<LightPoolProps> = ({
-  radius = 2, color = S.bone, intensity = 1, haze = 0.35, hazeHeight, softness = 0.7, breakup = 0.3, seed = 1, renderOrder = 1, ...group
+  radius = 2, color = S.bone, intensity = 1, haze = 0.35, hazeHeight, hazeRadius, softness = 0.7, breakup = 0.3, seed = 1, renderOrder = 1, ...group
 }) => {
   const hh = hazeHeight ?? radius * 1.4;
+  const hr = hazeRadius ?? radius * 0.6;
   const mats = useMemo(() => {
     const disc = new THREE.ShaderMaterial({
       uniforms: {
@@ -107,13 +79,9 @@ export const LightPool: React.FC<LightPoolProps> = ({
         uNoise: {value: atmosNoise(1)},
       },
       vertexShader: DISC_VERT, fragmentShader: DISC_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
-      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+      polygonOffset: true, polygonOffsetFactor: 0, polygonOffsetUnits: -4,
     });
-    const hz = new THREE.ShaderMaterial({
-      uniforms: {uColor: {value: new THREE.Color()}, uHeight: {value: 1}},
-      vertexShader: HAZE_VERT, fragmentShader: HAZE_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
-      side: THREE.DoubleSide,
-    });
+    const hz = makeShaftVolumeMaterial();
     return {disc, haze: hz};
   }, []);
   useLayoutEffect(() => () => {
@@ -127,15 +95,25 @@ export const LightPool: React.FC<LightPoolProps> = ({
     d.uSoft.value = softness;
     d.uBreak.value = breakup;
     d.uSeed.value = seed;
+    // the haze is a ray-marched frustum (same volume shader as <LightShaft>): wide at the floor, fading upward;
+    // silhouettes standing in it stay pure black (drawn from back faces)
     const h = mats.haze.uniforms;
-    h.uColor.value.set(color).multiplyScalar(intensity * haze * 0.35);
-    h.uHeight.value = 1;
+    h.uR0.value = hr;
+    h.uR1.value = hr * 0.6;
+    h.uLen.value = hh;
+    h.uColor.value.set(color).multiplyScalar(intensity * haze * 0.9);
+    h.uFalloff.value = 1.8;
+    h.uSoft.value = 1.6;
+    h.uStri.value = 0.25;
+    h.uGround.value = -1e4; // world space: no floor cut (the column starts on the pool's floor, whatever its height)
+    h.uGroundFade.value = 0;
+    h.uSeed.value = seed;
   });
   return (
     <group {...group}>
-      <mesh geometry={DISC} material={mats.disc} rotation-x={-Math.PI / 2} position-y={0.004} scale={radius} renderOrder={renderOrder} visible={intensity > 0} />
+      <mesh geometry={DISC} material={mats.disc} rotation-x={-Math.PI / 2} position-y={0.008} scale={radius} renderOrder={renderOrder} visible={intensity > 0} />
       {haze > 0 ? (
-        <mesh geometry={getHaze()} material={mats.haze} scale={[radius, hh, radius]} renderOrder={renderOrder + 3} visible={intensity > 0} />
+        <mesh geometry={getShaftHull()} material={mats.haze} position-y={0.002} renderOrder={renderOrder + 3} frustumCulled={false} visible={intensity > 0} />
       ) : null}
     </group>
   );

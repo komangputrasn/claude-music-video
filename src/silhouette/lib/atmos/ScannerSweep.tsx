@@ -8,7 +8,8 @@
  *   sheet so you see it obliquely (a sheet seen at an angle reads brighter, as in real fog).
  *
  *   <ScannerSweep origin?={[0, 6, 0]} angle?={0} span?={0.5} length?={8} color?={S.authRed} intensity?={1.4}
- *                 fill?={0.35} edge?={1} lead?={0} falloff?={1.1} time?={0} {...group}/>
+ *                 fill?={0.7} edge?={1} lead?={0} falloff?={0.7} time?={0}
+ *                 ground?={0} groundFade?={0.3} {...group}/>
  *
  *   angle      radians, the sweep: animate it (e.g. Math.sin(t * 0.8) * 0.6) for the pendulum scan.
  *   span       angular width of the fan (rad).          length   radius of the fan (m)
@@ -18,6 +19,8 @@
  *   lead       −1..1 sweep direction. 0 = both edges hot, symmetric fill. ±1 = only the LEADING edge (toward ±X
  *              rotation) is hot and the fill fades into a trail behind it (radar-like). Set lead = sign(dAngle/dt).
  *   falloff    exponent of the fade along the radius.     time   seconds; drives faint raster streaks in the sheet.
+ *   ground / groundFade  world floor height (default 0) and the fade (m, default 0.3) so the sheet dissolves into the
+ *              floor instead of a hard cut (groundFade 0 = off).
  *
  * <ScanLine> — a hot red line sliding across a wall/plane surface (a scan passing over a facade, a door, a bed).
  *   A decal plane facing +Z, ORIGIN AT ITS CENTRE; place it 1–2 cm in front of the surface (or rotate it onto the floor).
@@ -52,6 +55,8 @@ export type ScannerSweepProps = GroupProps & {
   lead?: number;
   falloff?: number;
   time?: number;
+  ground?: number;
+  groundFade?: number;
   renderOrder?: number;
 };
 
@@ -63,6 +68,7 @@ varying float vA;
 varying float vR;
 varying vec3 vN;
 varying vec3 vV;
+varying float vWY;
 void main() {
   float a = position.x * ${EXT.toFixed(2)};
   float r = position.y + 0.5;
@@ -71,6 +77,7 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   vN = normalize(normalMatrix * vec3(0.0, 0.0, 1.0));
   vV = -mv.xyz;
+  vWY = (modelMatrix * vec4(p, 1.0)).y;
   vA = a;
   vR = r;
   gl_Position = projectionMatrix * mv;
@@ -78,24 +85,25 @@ void main() {
 
 const FAN_FRAG = /* glsl */ `
 uniform vec3 uColor;
-uniform float uFill, uEdge, uLead, uFalloff, uTime, uSpan, uLength;
+uniform float uFill, uEdge, uLead, uFalloff, uTime, uSpan, uLength, uGround, uGroundFade;
 uniform sampler2D uNoise;
 varying float vA;
 varying float vR;
 varying vec3 vN;
 varying vec3 vV;
+varying float vWY;
 void main() {
   float ea = abs(vA);
   float soft = 0.08;
   float inside = 1.0 - smoothstep(0.5 - soft, 0.5, ea);
   float ld = sign(uLead);
-  float trail = pow(clamp(vA * ld + 0.5, 0.0, 1.0), 1.6);
+  float trail = 0.15 + 0.85 * pow(clamp(vA * ld + 0.5, 0.0, 1.0), 1.2);
   float leadK = mix(1.0, trail, abs(uLead));
   float rad = smoothstep(0.0, 0.03, vR) * pow(1.0 - vR, uFalloff);
   float facing = abs(dot(normalize(vN), normalize(vV)));
   float sheet = mix(1.0, 1.0 / max(facing, 0.3), 0.5);
   float st = texture2D(uNoise, vec2(vA * uSpan * 6.0, vR * uLength * 0.08 - uTime * 0.15)).g;
-  float fill = inside * leadK * rad * sheet * (0.7 + 0.6 * st) * uFill;
+  float fill = inside * leadK * rad * sheet * (0.7 + 0.6 * st) * uFill * 1.4;
   // laser edge(s): ~1.5 px hot core + soft halo, screen-space constant width
   float fw = fwidth(vA) + 1e-5;
   float dEdge = abs(ea - 0.5);
@@ -103,15 +111,16 @@ void main() {
   float dl = mix(dEdge, dLead, step(0.5, abs(uLead))) / fw;
   float line = exp(-dl * dl * 0.35) + exp(-dl * 0.22) * 0.18;
   float lineRad = smoothstep(0.0, 0.015, vR) * pow(1.0 - vR, uFalloff * 0.55);
-  vec3 col = uColor * (fill + line * lineRad * uEdge * 1.4);
+  float gf = uGroundFade > 0.0 ? smoothstep(uGround, uGround + uGroundFade, vWY) : 1.0;
+  vec3 col = uColor * (fill * gf + line * lineRad * uEdge * 1.4 * mix(1.0, gf, 0.6));
   gl_FragColor = vec4(col, 1.0);
 }`;
 
 const FAN_GEO = new THREE.PlaneGeometry(1, 1, 64, 12);
 
 export const ScannerSweep: React.FC<ScannerSweepProps> = ({
-  origin = [0, 6, 0], angle = 0, span = 0.5, length = 8, color = S.authRed, intensity = 1.4, fill = 0.35, edge = 1, lead = 0,
-  falloff = 1.1, time = 0, renderOrder = 4, ...group
+  origin = [0, 6, 0], angle = 0, span = 0.5, length = 8, color = S.authRed, intensity = 1.4, fill = 0.7, edge = 1, lead = 0,
+  falloff = 0.7, time = 0, ground = 0, groundFade = 0.3, renderOrder = 4, ...group
 }) => {
   const mat = useMemo(
     () =>
@@ -119,6 +128,7 @@ export const ScannerSweep: React.FC<ScannerSweepProps> = ({
         uniforms: {
           uAngle: {value: 0}, uSpan: {value: 0.5}, uLength: {value: 8}, uColor: {value: new THREE.Color()}, uFill: {value: 0.35},
           uEdge: {value: 1}, uLead: {value: 0}, uFalloff: {value: 1.1}, uTime: {value: 0}, uNoise: {value: atmosNoise(1)},
+          uGround: {value: 0}, uGroundFade: {value: 0.3},
         },
         vertexShader: FAN_VERT,
         fragmentShader: FAN_FRAG,
@@ -142,6 +152,8 @@ export const ScannerSweep: React.FC<ScannerSweepProps> = ({
     u.uLead.value = Math.max(-1, Math.min(1, lead));
     u.uFalloff.value = falloff;
     u.uTime.value = time;
+    u.uGround.value = ground;
+    u.uGroundFade.value = groundFade;
   });
   return (
     <group {...group}>

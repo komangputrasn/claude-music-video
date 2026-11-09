@@ -4,7 +4,8 @@
  * slide across THROUGH the same slats.
  *
  * <BlindsLight> — the pattern projected on a wall (or floor). A decal plane facing +Z, ORIGIN AT ITS CENTRE; place it
- *   1–2 cm in front of the wall, or rotation-x={-Math.PI/2} on the floor. Additive, fog-free.
+ *   1–2 cm in front of the wall. On the floor: rotation={[-Math.PI/2, 0, -Math.PI/2]} makes the bars run along world
+ *   +X (light travelling in X), rotation-x={-Math.PI/2} makes them run along Z. Additive, fog-free.
  *
  *   <BlindsLight width?={3.2} height?={2.4} slats?={9} gap?={0.42} angle?={0.12} softness?={0.14} offset?={0}
  *                edge?={0.18} color?={S.bone} intensity?={0.95} scan?={null} scanColor?={S.authRed}
@@ -18,24 +19,43 @@
  *   edge       soft border of the window projection (m)
  *   intensity  HDR multiplier; 0.95 keeps bone bars JUST under bloom (the wall is a big surface: don't bloom it).
  *   scan       null = off, else 0..1 position of the red scanner band across the width (animate 0 → 1).
- *              Inside the band the white light is REPLACED by red (never mixed into pink). The band passes through the
- *              same slats, plus a faint unmasked spill.
+ *              Inside the band the white light is REPLACED by red (a narrow switch, never a pink crossfade). The band
+ *              passes through the same slats, plus a faint red spill on the slat shadows.
  *
- * <BlindShafts> — the same pattern as VOLUMETRIC shafts in the air: N additive slices (one draw call) stacked from the
- *   window along `direction`, each carrying the bar pattern, softening and fading with distance. Viewed from inside the
- *   room toward the window the slices parallax into striped beams. Origin = the window centre; the window lies in the
- *   local XY plane; light travels along `direction` (default into the room toward +Z and slightly down).
+ * <BlindShafts> — the same pattern as VOLUMETRIC shafts in the air. A ray-marched volume (28 jittered samples per
+ *   pixel, one draw call): the window (local XY plane, centred on the origin) extruded along `direction` for `length`
+ *   metres (measured along the window normal, local +Z). Every sample looks up the blinds pattern at the window point
+ *   its light came through, so the bars, the red scan band and the soft window edge all carry into the air, softening
+ *   and fading with distance. Reads from any angle (side-on = parallel sheets of light; looking toward the window =
+ *   striped rays converging). Drawn from back faces: silhouettes standing inside stay pure black.
  *
  *   <BlindShafts width?={3.2} height?={2.4} slats?={9} gap?={0.42} angle?={0.12} softness?={0.14} offset?={0}
- *                direction?={[0.25, -0.3, 1]} length?={5} slices?={24} color?={S.bone} intensity?={0.5}
- *                scan?={null} scanColor?={S.authRed} scanWidth?={0.14} scanIntensity?={1.6} {...group}/>
+ *                direction?={[0.25, -0.3, 1]} length?={5} color?={S.bone} intensity?={0.5}
+ *                scan?={null} scanColor?={S.authRed} scanWidth?={0.14} scanIntensity?={1.6}
+ *                ground?={0} groundFade?={0.06} {...group}/>
  *
- *   Use the SAME slats/gap/angle/offset/scan as the BlindsLight on the wall so beams and stripes agree.
- *   intensity is per-stack (it is divided over the slices); 0.4–0.8 typical. Beams may glow slightly.
+ *   Matching a BlindsLight to the shafts (same slats/gap/offset/scan): light paints the window's pattern MIRRORED.
+ *     - on a wall the light hits: mirror the decal with scale-x={-1} (same angle), else the red band slides the
+ *       opposite way on the wall to the air;
+ *     - on the floor: turn the decal so its local +X runs along the window's local +X (window in a left wall,
+ *       rotation-y={π/2} → floor rotation={[-π/2, 0, π/2]}), give the window angle 0 and the floor
+ *       angle = atan(direction[0] / direction[2]) (the light's sideways drift). The playground's last shot does this.
+ *   direction  local light direction (z must be > 0: into the room). Rotate the group to put the window on a wall,
+ *              e.g. rotation-y={Math.PI/2} for a window in a left wall (local +Z → world +X).
+ *   intensity  0.3–0.8 typical (the air glows much less than the wall). The optical depth saturates, so the brightest
+ *              the air can get is color × intensity (keep bone ≤ ~0.8 near a silhouette: bloom veils black shapes grey).
+ *   ground / groundFade  world floor height (default 0) and a short fade (m) above it: the light stops on the floor and
+ *              the hull is flattened onto it (like <LightShaft>), so beams that slope into the floor are not cut by a
+ *              hard dark edge. Floor not at 0? pass it (ground={-1e4} = no floor).
+ *   End the volume at the opposite wall (length); a hull poking through a wall drops those rays (see below).
+ *   Looking INTO the window: whatever you put outside (a Backlight) shows through the gaps and ADDS to the red shafts
+ *   in front of it (white + red = pink). Keep the outside dim (Backlight ≤ ~0.4): the shafts alone already glow white.
+ *   Put the origin on the ROOM side of the wall (the window cap must not sit behind an opaque surface: back faces
+ *   hidden behind an occluder drop the whole ray).
  *
  * Usage (V1Bedroom: window on the left wall at x = −3, light falling onto the back wall)
  *   <BlindShafts position={[-3, 1.6, 0]} rotation-y={Math.PI / 2} direction={[0.3, -0.25, 1]} length={4} scan={s}/>
- *   <BlindsLight position={[0.5, 1.5, -2.99]} width={3.4} height={2.2} scan={s}/>
+ *   <BlindsLight position={[0.5, 1.5, -2.99]} scale-x={-1} width={3.4} height={2.2} scan={s}/>     // mirrored: see above
  */
 import React, {useLayoutEffect, useMemo} from 'react';
 import * as THREE from 'three';
@@ -61,7 +81,7 @@ type BlindsCommon = {
 };
 
 export type BlindsLightProps = GroupProps & BlindsCommon & {edge?: number; time?: number};
-export type BlindShaftsProps = GroupProps & BlindsCommon & {direction?: V3; length?: number; slices?: number};
+export type BlindShaftsProps = GroupProps & BlindsCommon & {direction?: V3; length?: number; ground?: number; groundFade?: number};
 
 /** GLSL: bar mask at window uv (0..1), with per-slat brightness variation; and the red scan band weight. */
 const GLSL_BLINDS = /* glsl */ `
@@ -104,48 +124,81 @@ void main() {
   float n = texture2D(uNoise, m / 2.5 + vec2(uTime * 0.01, 0.0)).r;
   float grad = mix(1.0, 0.72, vUv.x) * mix(0.85, 1.12, n);
   float band = scanBand(vUv);
-  vec3 col = uColor * bars * grad * (1.0 - 0.9 * band) + uScanColor * band * (bars * 0.9 + 0.12);
+  // each point is lit RED or WHITE, never pink: a narrow switch inside the band, not a linear crossfade
+  float isRed = smoothstep(0.28, 0.5, band);
+  vec3 col = uColor * bars * grad * (1.0 - isRed)
+           + uScanColor * (bars * 0.9 * isRed + 0.12 * band * (1.0 - bars)) * mix(1.0, grad, 0.5);
   gl_FragColor = vec4(col * win, 1.0);
 }`;
 
 const SHAFT_VERT = /* glsl */ `
-attribute vec3 aSlice; // x = s (0..1 along length), y,z unused
-uniform vec3 uDir;
-uniform float uLen;
-varying vec2 vUv;
-varying float vS;
-varying vec3 vN;
-varying vec3 vV;
+uniform float uGround;
+varying vec3 vLocal;
+varying vec3 vCam;
+varying vec4 vRowY;
 void main() {
-  vUv = uv;
-  vS = aSlice.x;
-  vec3 p = position + uDir * (aSlice.x * uLen);
-  vec4 mv = modelViewMatrix * vec4(p, 1.0);
-  vN = normalize(normalMatrix * vec3(0.0, 0.0, 1.0));
-  vV = -mv.xyz;
-  gl_Position = projectionMatrix * mv;
+  vRowY = vec4(modelMatrix[0][1], modelMatrix[1][1], modelMatrix[2][1], modelMatrix[3][1]); // world y = dot(vRowY, vec4(p, 1))
+  // flatten the hull onto the floor: back faces under the floor would be depth-rejected and drop whole rays
+  vec4 wp = modelMatrix * vec4(position, 1.0);
+  wp.y = max(wp.y, uGround + 0.003);
+  mat4 inv = inverse(modelMatrix);
+  vLocal = (inv * wp).xyz;
+  vCam = (inv * vec4(cameraPosition, 1.0)).xyz;
+  gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
 
+// Ray-marched sheared box: the window (W×H, local XY at z = 0) extruded along uDir (uDir.z = 1) for uLen metres.
+// In "unsheared" coords q = (p.x − d.x·p.z, p.y − d.y·p.z, p.z) the volume is an axis-aligned box, and q.xy is the
+// window point the light at p came through — so every sample looks up the blinds pattern directly.
 const SHAFT_FRAG = /* glsl */ `
-uniform vec3 uColor, uScanColor;
-uniform float uSliceK;
-varying vec2 vUv;
-varying float vS;
-varying vec3 vN;
-varying vec3 vV;
+uniform vec3 uColor, uScanColor, uDir;
+uniform float uLen, uK, uGround, uGroundFade;
+varying vec3 vLocal;
+varying vec3 vCam;
+varying vec4 vRowY;
 ${GLSL_BLINDS}
+float bsHash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 void main() {
-  vec2 m = (vUv - 0.5) * uSize;
-  vec2 q = uSize * 0.5 - abs(m);
-  float e = 0.06 + 0.5 * vS;
-  float win = smoothstep(0.0, e, q.x) * smoothstep(0.0, e, q.y);
-  float bars = blindsMask(vUv, vS * 0.18);
-  float along = smoothstep(0.0, 0.06, vS) * pow(1.0 - vS, 1.4);
-  float facing = abs(dot(normalize(vN), normalize(vV)));
-  float grazing = smoothstep(0.05, 0.35, facing);
-  float band = scanBand(vUv);
-  vec3 col = uColor * bars * (1.0 - 0.9 * band) + uScanColor * band * bars;
-  gl_FragColor = vec4(col * win * along * grazing * uSliceK, 1.0);
+  vec3 ro = vCam;
+  vec3 rd = normalize(vLocal - ro);
+  vec3 qo = vec3(ro.xy - uDir.xy * ro.z, ro.z);
+  vec3 qd = vec3(rd.xy - uDir.xy * rd.z, rd.z);
+  vec3 lo = vec3(-uSize * 0.5, 0.0), hi = vec3(uSize * 0.5, uLen);
+  vec3 inv = 1.0 / (qd + vec3(1e-7));
+  vec3 t0 = (lo - qo) * inv, t1 = (hi - qo) * inv;
+  vec3 tmin = min(t0, t1), tmax = max(t0, t1);
+  float tA = max(max(tmin.x, tmin.y), max(tmin.z, 0.0));
+  float tB = min(min(tmax.x, tmax.y), tmax.z);
+  if (tB <= tA) discard;
+  const int N = 28;
+  float dt = (tB - tA) / float(N);
+  float j = bsHash(gl_FragCoord.xy);
+  float accW = 0.0, accR = 0.0;
+  for (int i = 0; i < N; i++) {
+    float tt = tA + (float(i) + j) * dt;
+    vec3 q = qo + qd * tt;
+    float s = clamp(q.z / uLen, 0.0, 1.0);
+    float wy = dot(vRowY, vec4(ro + rd * tt, 1.0));
+    float gf = uGroundFade > 0.0 ? smoothstep(uGround, uGround + uGroundFade, wy) : step(uGround, wy);
+    vec2 uv = q.xy / uSize + 0.5;
+    vec2 m = uSize * 0.5 - abs(q.xy);
+    float e = 0.04 + 0.35 * s;
+    float win = smoothstep(0.0, e, m.x) * smoothstep(0.0, e, m.y);
+    float bars = blindsMask(uv, s * 0.22);
+    float along = smoothstep(0.0, 0.05, s) * pow(1.0 - s, 1.3);
+    float band = scanBand(uv);
+    float l = bars * win * along * gf;
+    accW += (1.0 - band) * l;
+    accR += band * l;
+  }
+  // each ray shows the light that dominates it, RED or WHITE (never pink): a ray that crosses only a little red
+  // (e.g. side-on, through every sheet) stays white; optical depth saturates (1 - e^-x) so looking straight into
+  // the beams can't run away into bloom
+  float W = 1.0 - exp(-accW * dt * uK);
+  float R = 1.0 - exp(-accR * dt * uK);
+  float red = smoothstep(0.35, 0.5, accR / (accW + accR + 1e-6)); // decided on the raw light, not the saturated depths
+  vec3 col = uColor * W * (1.0 - red) + uScanColor * R * red;
+  gl_FragColor = vec4(col, 1.0);
 }`;
 
 const UNIT = new THREE.PlaneGeometry(1, 1);
@@ -199,49 +252,41 @@ export const BlindsLight: React.FC<BlindsLightProps> = ({
 
 export const BlindShafts: React.FC<BlindShaftsProps> = ({
   width = 3.2, height = 2.4, slats = 9, gap = 0.42, angle = 0.12, softness = 0.14, offset = 0, direction = [0.25, -0.3, 1], length = 5,
-  slices = 24, color = S.bone, intensity = 0.5, scan = null, scanColor = S.authRed, scanWidth = 0.14, scanIntensity = 1.6, seed = 1,
-  renderOrder = 5, ...group
+  color = S.bone, intensity = 0.5, scan = null, scanColor = S.authRed, scanWidth = 0.14, scanIntensity = 1.6, seed = 1,
+  ground = 0, groundFade = 0.06, renderOrder = 5, ...group
 }) => {
-  const n = Math.max(2, Math.round(slices));
+  const [dx, dy] = [direction[0] / Math.max(0.05, Math.abs(direction[2])), direction[1] / Math.max(0.05, Math.abs(direction[2]))];
   const geo = useMemo(() => {
-    const parts: THREE.BufferGeometry[] = [];
-    for (let i = 0; i < n; i++) {
-      const g = new THREE.PlaneGeometry(width, height);
-      const s = (i + 0.5) / n;
-      g.setAttribute('aSlice', new THREE.Float32BufferAttribute(new Array(4).fill(0).flatMap(() => [s, 0, 0]), 3));
-      parts.push(g);
+    // sheared hull box: window at z = 0, extruded along (dx, dy, 1) for `length` m (slightly padded)
+    // subdivided along the length so flattening the hull onto the floor (vertex shader) follows the true bottom face
+    const g = new THREE.BoxGeometry(width * 1.04 + 0.02, height * 1.04 + 0.02, length + 0.02, 1, 1, 32);
+    g.translate(0, 0, length / 2);
+    const P = g.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < P.count; i++) {
+      const z = Math.max(0, P.getZ(i));
+      P.setXYZ(i, P.getX(i) + dx * z, P.getY(i) + dy * z, z);
     }
-    // merge (one draw call; additive = order independent)
-    const out = new THREE.BufferGeometry();
-    const pos: number[] = [], uv: number[] = [], sl: number[] = [], idx: number[] = [];
-    parts.forEach((g, k) => {
-      const b = k * 4;
-      pos.push(...(g.attributes.position.array as Float32Array));
-      uv.push(...(g.attributes.uv.array as Float32Array));
-      sl.push(...(g.attributes.aSlice.array as Float32Array));
-      (g.index!.array as Uint16Array).forEach((v) => idx.push(v + b));
-      g.dispose();
-    });
-    out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    out.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    out.setAttribute('aSlice', new THREE.Float32BufferAttribute(sl, 3));
-    out.setIndex(idx);
-    return out;
-  }, [n, width, height]);
+    P.needsUpdate = true;
+    g.computeBoundingSphere();
+    return g;
+  }, [width, height, length, dx, dy]);
   useLayoutEffect(() => () => geo.dispose(), [geo]);
   const mat = useMemo(
-    () => additiveMat(SHAFT_VERT, SHAFT_FRAG, {...blindsUniforms(), uDir: {value: new THREE.Vector3(0, 0, 1)}, uLen: {value: 5}, uSliceK: {value: 0.05}}, {side: THREE.DoubleSide}),
+    () =>
+      additiveMat(SHAFT_VERT, SHAFT_FRAG, {...blindsUniforms(), uDir: {value: new THREE.Vector3(0, 0, 1)}, uLen: {value: 5}, uK: {value: 0.5},
+        uGround: {value: 0}, uGroundFade: {value: 0.06}}, {
+        side: THREE.BackSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4,
+      }),
     [],
   );
   useLayoutEffect(() => () => mat.dispose(), [mat]);
   useLayoutEffect(() => {
     setBlinds(mat.uniforms, {width, height, slats, gap, angle, softness, offset, color, intensity, scan, scanColor, scanWidth, scanIntensity, seed});
-    const d = new THREE.Vector3(...direction);
-    // keep the slices' spacing measured along the window normal: travel `length` metres along +Z
-    d.multiplyScalar(1 / Math.max(0.05, Math.abs(d.z)));
-    mat.uniforms.uDir.value.copy(d);
+    mat.uniforms.uDir.value.set(dx, dy, 1);
     mat.uniforms.uLen.value = length;
-    mat.uniforms.uSliceK.value = 6 / n;
+    mat.uniforms.uK.value = 1.1;
+    mat.uniforms.uGround.value = ground;
+    mat.uniforms.uGroundFade.value = groundFade;
   });
   return (
     <group {...group}>

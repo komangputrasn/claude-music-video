@@ -11,8 +11,11 @@
  *              fadeNear?={2} seed?={1} {...group}/>
  *
  *   Origin / layout: layer i sits at local z = −(near … far) (spaced slightly denser near the front), base at y = 0,
- *   centred on x = 0. Put the group where the haze should START, e.g. at the camera's x/z on the ground, or just in
- *   front of the subject; rotate it with the camera for side views.
+ *   centred on x = 0. Rotate the group with the camera for side views.
+ *   HEROES STAY BLACK ONLY IN FRONT OF THE HAZE: every card between the camera and a silhouette veils it grey (with
+ *   'normal' blending as much as 'additive'). Start the first card just BEHIND the hero (group at the camera's z and
+ *   near ≈ camera-to-hero distance + 0.5–1 m, or the group just behind the hero and near ≈ 0.5); only far / crowd
+ *   figures should stand inside the haze.
  *   count      number of cards (6–12 is plenty)          near/far   distances (m) along −Z of the first/last card
  *   width/height  card size (m). Make width cover the frustum at `far` (long lenses: far × 2·tan(fov/2) × 2.39).
  *   color      haze colour (S.fog lit haze; S.ash / GREYS.g5 for dark haze; never a hue except Final dawnGold haze)
@@ -26,7 +29,7 @@
  *   fadeNear   cards closer to the camera than ~fadeNear (m) fade out (they'd read as flat sheets)
  *
  * Usage
- *   <FogLayers position={[0, 0, 6]} near={3} far={45} time={t} pulse={beatAt(t).pulse * 0.5} />
+ *   <FogLayers position={[0, 0, heroZ - 0.5]} near={0.5} far={45} time={t} pulse={beatAt(t).pulse * 0.5} />
  *   <FogLayers color={S.bone} blending="additive" density={0.07} near={10} far={30} time={t} />   // glow around a light
  */
 import React, {useLayoutEffect, useMemo} from 'react';

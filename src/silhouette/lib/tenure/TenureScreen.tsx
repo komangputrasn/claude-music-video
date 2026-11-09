@@ -4,7 +4,7 @@
  *
  *   <TenureScreen width?={16} height?={9} content?="wordmark" background?="black" ink? intensity?={1.3} pulse?={0}
  *                 time?={t} frame?={true} reveal? haze?={0.35} hazeColor? grid?={0.22} pixel? depth? border?
- *                 resolution?={2048} fog?={0.55} flicker?={0} irisOpen?={1} irisFlicker? renderOrder? {...group}/>
+ *                 resolution?={2048} fog?={0.35} flicker?={0} irisOpen?={1} irisFlicker? renderOrder? {...group}/>
  *
  *   width/height  size of the glowing FACE in metres (the frame adds `border` around it).
  *   content       a preset name, a custom {lines, iris?, chrome?, header?, footer?}, or string[] (first line big Futura,
@@ -18,9 +18,13 @@
  *                 Lines auto-shrink to fit the width. `iris: 0.3` reserves a slot above the lines (diameter = 0.3 H)
  *                 where a live <Iris> is drawn. `chrome` adds the system furniture (corner mark, lease no., rules, footer).
  *   background    'black' (default; red/bone ink on black) | 'red' (full-red slab, void ink — the Intro title).
+ *                 Red ink prints void on a red slab (and void ink prints bone on black), so every preset has a full-red
+ *                 variant: content="declined" background="red".
  *   ink           override every line's ink: 'red' | 'bone' | 'void'.
  *   intensity     HDR multiplier of the face (default 1.3; bone > ~1.1 blooms, red never exceeds ~2 → keep ≤ 2).
- *   pulse         0..1 brightens face, iris and haze — drive it with bassAt(absFrame) on the beat.
+ *   pulse         0..1 brightens face, iris and haze — drive it with bassAt(absFrame) on the beat. The face is capped
+ *                 at 2× on black screens and 1.6× on a full-red slab (unless intensity itself is higher), so a full
+ *                 pulse never turns the red orange.
  *   time          seconds: refresh-band roll, iris blades, flicker.
  *   reveal        draw only the first N characters (across all lines, in order) — letter-by-letter titles. Letters
  *                 appear in their final place. The texture is redrawn ONLY when content/ink/background/reveal change.
@@ -185,6 +189,9 @@ export const drawTenureScreen = (c: HTMLCanvasElement, r: ResolvedScreen, reveal
   }
   ctx.textBaseline = 'alphabetic';
   const defInk: ScreenInk = r.ink ?? (red ? 'void' : 'red');
+  // ink that would vanish into the background flips: red ink on the full-red slab prints void (so every preset has a
+  // full-red variant: content="declined" background="red"), void ink on a black screen prints bone
+  const vis = (ink: ScreenInk): ScreenInk => (red && ink === 'red' ? 'void' : !red && ink === 'void' ? 'bone' : ink);
   const chrome = r.content.chrome !== false;
   const chromeInk: ScreenInk = red ? 'void' : 'bone';
   const left = W * 0.05;
@@ -274,7 +281,7 @@ export const drawTenureScreen = (c: HTMLCanvasElement, r: ResolvedScreen, reveal
       let x = W / 2 - l.w / 2;
       let k = count;
       for (const sp of l.spans) {
-        const ink = r.ink ?? sp.ink ?? l.ink;
+        const ink = vis(r.ink ?? sp.ink ?? l.ink);
         const op = l.opacity * (sp.opacity ?? 1);
         const glow = pass === 0;
         if (glow && ink === 'void') {
@@ -304,7 +311,7 @@ export const drawTenureScreen = (c: HTMLCanvasElement, r: ResolvedScreen, reveal
 // ------------------------------------------------------------------------------------------------ shaders
 const FACE_FRAG = /* glsl */ `
 uniform sampler2D uMap;
-uniform float uIntensity, uPulse, uTime, uGrid, uScan, uLift, uFog, uFlicker;
+uniform float uIntensity, uPulse, uTime, uGrid, uScan, uLift, uFog, uFlicker, uMaxK;
 uniform vec2 uCells;
 varying vec2 vUv;
 varying vec3 vWorld;
@@ -326,6 +333,9 @@ void main() {
     fl = mix(1.0, on, clamp(uFlicker, 0.0, 1.0));
   }
   float k = uIntensity * (1.0 + 0.6 * uPulse) * band * fall * fl;
+  // bass pulses never push the face past uMaxK (2x on black screens, 1.6x on a full-red slab — a whole slab of authRed
+  // above that reads salmon/orange under ACES) unless intensity itself is set higher
+  k = min(k, uMaxK);
   vec3 col = c * k * g + vec3(uLift) * (1.0 + uPulse) * fl;
   #ifdef USE_FOG
   col = mix(col, fogColor, tFogF() * uFog);
@@ -403,7 +413,7 @@ const PLANE = new THREE.PlaneGeometry(1, 1);
 
 export const TenureScreen: React.FC<TenureScreenProps> = ({
   width = 16, height = 9, content = 'wordmark', background, ink, intensity = 1.3, pulse = 0, time = 0, frame = true,
-  reveal, haze = 0.35, hazeColor, grid = 0.22, pixel, depth: depthProp, border: borderProp, resolution = 2048, fog = 0.55,
+  reveal, haze = 0.35, hazeColor, grid = 0.22, pixel, depth: depthProp, border: borderProp, resolution = 2048, fog = 0.35,
   flicker = 0, irisOpen = 1, irisFlicker, renderOrder, ...group
 }) => {
   const {w, h, border, depth} = screenDims({width, height, frame, border: borderProp, depth: depthProp});
@@ -439,11 +449,15 @@ export const TenureScreen: React.FC<TenureScreenProps> = ({
           uLift: {value: 0.01},
           uFog: {value: 0.5},
           uFlicker: {value: 0},
+          uMaxK: {value: 2},
           uCells: {value: new THREE.Vector2(400, 200)},
         },
         vertexShader: BASIC_VERT,
         fragmentShader: FACE_FRAG,
         fog: true,
+        polygonOffset: true,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 3,
       }),
     [],
   );
@@ -467,7 +481,8 @@ export const TenureScreen: React.FC<TenureScreenProps> = ({
       }),
     [],
   );
-  const frameMat = useMemo(() => new THREE.MeshBasicMaterial({color: S.void}), []);
+  // slab pushed back in depth so the face/iris never z-fight it on far, long-lens shots
+  const frameMat = useMemo(() => new THREE.MeshBasicMaterial({color: S.void, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 8}), []);
   useLayoutEffect(() => () => {
     faceMat.dispose();
     hazeMat.dispose();
@@ -488,6 +503,7 @@ export const TenureScreen: React.FC<TenureScreenProps> = ({
     u.uLift.value = background === 'red' || resolved.background === 'red' ? 0 : 0.012;
     u.uFog.value = fog;
     u.uFlicker.value = flicker;
+    u.uMaxK.value = Math.max(resolved.background === 'red' ? 1.6 : 2, intensity);
     u.uCells.value.set(w / pix, h / pix);
     const hu = hazeMat.uniforms;
     // red carries little luminance: give it more haze so the glow reads, bone less (stays below bloom)
@@ -529,7 +545,7 @@ export const TenureScreen: React.FC<TenureScreenProps> = ({
       <mesh geometry={PLANE} material={faceMat} position={[0, cy, faceZ]} scale={[w, h, 1]} renderOrder={renderOrder} userData={{silKeep: true}} />
       {irisR > 0 ? (
         <Iris
-          position={[0, border + h * (1 - layout.irisCy), faceZ + Math.max(0.01, h * 0.004)]}
+          position={[0, border + h * (1 - layout.irisCy), faceZ + Math.max(0.02, h * 0.006)]}
           radius={irisR}
           open={irisOpen}
           time={time}

@@ -4,9 +4,9 @@
  * hanging indents. One canvas texture (drawn once per seed/layout) scrolled by texture offset in the shader — no
  * per-frame redraw. Fades out at the top and bottom of the facade.
  *
- *   <TermsScroll width?={30} height?={80} speed?={1.2} time?={t} fontSize?={0.9} color?={S.bone} intensity?={1.0}
+ *   <TermsScroll width?={30} height?={80} speed?={1.2} time?={t} fontSize?={1.2} color?={S.bone} intensity?={1.0}
  *                opacity?={1} seed?={0} columns?={1} align?="left" fade?={0.14} blend?="add" fog?={0.85}
- *                lineSpacing?={1.55} renderOrder? {...group}/>
+ *                lineSpacing?={1.4} renderOrder? {...group}/>
  *
  *   width, height  facade area covered (metres). Origin: BOTTOM CENTRE, faces +Z (put it 0.05 m in front of a facade).
  *   speed          metres per second the text rises (credits pace: ~1–2 m/s on a skyscraper).
@@ -62,8 +62,8 @@ const columnRows = (ctx: CanvasRenderingContext2D, seed: number | string, textW:
     }
     const lines = wrap(ctx, it.text, textW);
     lines.forEach((l, i) => block.push({kind: i === 0 ? 'clause' : 'cont', num: i === 0 ? it.num : undefined, text: l}));
-    block.push({kind: 'blank', text: ''});
-    if (rows.length + block.length > maxRows) break;
+    // keep >= 3 blank rows at the end: the loop seam reads as a page break, not as numbering jumping backwards
+    if (rows.length + block.length > maxRows - 3) break;
     rows.push(...block);
   }
   while (rows.length < maxRows) rows.push({kind: 'blank', text: ''});
@@ -172,8 +172,8 @@ export type TermsScrollProps = GroupProps & {
 const PLANE = new THREE.PlaneGeometry(1, 1);
 
 export const TermsScroll: React.FC<TermsScrollProps> = ({
-  width = 30, height = 80, speed = 1.2, time = 0, fontSize = 0.9, color = S.bone, intensity = 1.0, opacity = 1, seed = 0,
-  columns = 1, align = 'left', fade = 0.14, blend = 'add', fog = 0.85, lineSpacing = 1.55, renderOrder, ...group
+  width = 30, height = 80, speed = 1.2, time = 0, fontSize = 1.2, color = S.bone, intensity = 1.0, opacity = 1, seed = 0,
+  columns = 1, align = 'left', fade = 0.14, blend = 'add', fog = 0.85, lineSpacing = 1.4, renderOrder, ...group
 }) => {
   const tex = useMemo(() => {
     const L = drawTermsCanvas({widthM: width, fontSize, seed, columns, lineSpacing, align});

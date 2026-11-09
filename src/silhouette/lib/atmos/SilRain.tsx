@@ -10,7 +10,7 @@
  * Far drops fade into the scene fog.
  *
  *   <SilRain time={t} area?={[16, 10, 16]} count?={2600} speed?={11} wind?={[-1.2, 0]} length?={0.7} width?={0.006}
- *            color?={GREYS.g7} intensity?={0.55} blending?={'mix'} splashes?={count / 10} splashSize?={0.14}
+ *            color?={GREYS.g7} intensity?={0.55} blending?={'mix'} splashes?={count / 16} splashSize?={0.09}
  *            splashColor?={GREYS.g8} seed?={1} {...group}/>
  *
  *   time       seconds (song time)                     speed  fall speed m/s (± 20 % per drop)
@@ -131,17 +131,17 @@ ${GLSL_ATMOS_FOG}
 void main() {
   vec2 p = vUv * 2.0 - 1.0;
   float r = length(p);
-  float ring = exp(-pow((r - 0.75) / 0.09, 2.0)) * (1.0 - vT);
-  float fleck = exp(-r * r * 40.0) * pow(1.0 - vT, 4.0) * 1.6;
-  float m = (ring * 0.7 + fleck) * vA * (1.0 - smoothstep(0.92, 1.0, r));
+  float ring = exp(-pow((r - 0.7) / 0.07, 2.0)) * (1.0 - vT) * (1.0 - vT) * (0.6 + 0.4 * sin(atan(p.y, p.x) * 7.0 + vT * 3.0));
+  float fleck = exp(-r * r * 60.0) * pow(1.0 - vT, 5.0) * 2.0;
+  float m = (ring * 0.35 + fleck) * vA * (1.0 - smoothstep(0.92, 1.0, r));
   gl_FragColor = vec4(uColor * m * uIntensity * (1.0 - atmosFogAmount()), 1.0);
 }`;
 
 export const SilRain: React.FC<SilRainProps> = ({
   time, area = [16, 10, 16], count = 2600, speed = 11, wind = [-1.2, 0], length = 0.7, width = 0.006, color = GREYS.g7, intensity = 0.55,
-  blending = 'mix', splashes, splashSize = 0.14, splashColor = GREYS.g8, seed = 1, renderOrder = 6, ...group
+  blending = 'mix', splashes, splashSize = 0.09, splashColor = GREYS.g8, seed = 1, renderOrder = 6, ...group
 }) => {
-  const nSplash = Math.max(0, Math.round(splashes ?? count / 10));
+  const nSplash = Math.max(0, Math.round(splashes ?? count / 16));
   const {size: vp} = useThree();
   const geo = useMemo(() => {
     const B = new Float32Array(count * 3), V = new Float32Array(count);
@@ -199,7 +199,7 @@ export const SilRain: React.FC<SilRainProps> = ({
     s.uArea.value.set(...area);
     s.uSize.value = splashSize;
     s.uColor.value.set(splashColor);
-    s.uIntensity.value = blending === 'additive' ? intensity : Math.min(1.2, intensity * 1.1);
+    s.uIntensity.value = blending === 'additive' ? intensity : Math.min(1.0, intensity * 0.9);
   });
   return (
     <group {...group}>

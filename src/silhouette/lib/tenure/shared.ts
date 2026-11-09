@@ -8,7 +8,8 @@
  *   canvasTexture(c, opts)      THREE.CanvasTexture with sane filtering (mipmaps + anisotropy; srgb or linear mask)
  *   stream(seed)                fast seeded PRNG () => [0,1), seeded from rand() of src/lib/time (deterministic)
  *   hashStr(s)                  stable 32-bit string hash (default seeds from text)
- *   TENURE_GLSL                 hash/noise, tPixelGrid (anti-moiré LED grid), tScan (anti-moiré scanlines)
+ *   TENURE_HASH_GLSL            tHash/tHash2/tNoise (vertex or fragment)
+ *   TENURE_GLSL                 + tPixelGrid (anti-moiré LED grid), tScan (anti-moiré scanlines) — fragment only (fwidth)
  *   TENURE_FOG_GLSL             tFogF(): 0..1 fog factor of the current fragment (needs <fog_pars_fragment>)
  *   fogUniforms()               clone of THREE.UniformsLib.fog for custom ShaderMaterials (set material.fog = true)
  *
@@ -106,7 +107,8 @@ export const hashStr = (s: string) => {
 
 export const fogUniforms = () => THREE.UniformsUtils.clone(THREE.UniformsLib.fog);
 
-export const TENURE_GLSL = /* glsl */ `
+/** hash + value noise; safe in vertex AND fragment shaders */
+export const TENURE_HASH_GLSL = /* glsl */ `
 float tHash(float n) { return fract(sin(n) * 43758.5453123); }
 float tHash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
 float tNoise(vec2 p) {
@@ -114,7 +116,11 @@ float tNoise(vec2 p) {
   f = f * f * (3.0 - 2.0 * f);
   float a = tHash2(i), b = tHash2(i + vec2(1.0, 0.0)), c = tHash2(i + vec2(0.0, 1.0)), d = tHash2(i + vec2(1.0, 1.0));
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
+}`;
+
+/** TENURE_HASH_GLSL + tPixelGrid / tScan (these use fwidth: FRAGMENT shaders only) */
+export const TENURE_GLSL = /* glsl */ `
+${TENURE_HASH_GLSL}
 // LED / pixel grid multiplier in [1-amp, 1]: dark gaps between square cells. Fades to its mean once a cell is smaller
 // than ~3 px on screen, so a giant screen at long-lens distance never moirés.
 float tPixelGrid(vec2 cells, float amp) {

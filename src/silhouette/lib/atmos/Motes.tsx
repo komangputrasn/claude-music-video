@@ -16,6 +16,8 @@
  *   twinkle    0..1 how much motes flicker as they turn and catch the light.
  *   blending   'additive' (glowing dust, default) | 'normal' (opaque-ish flakes; dark ash).
  *   Far motes fade into the scene fog.
+ *   Motes are SELF-LIT (no light mask): additive dust outside the light reads as stars in the black. Fit the box to
+ *   the lit volume (a beam, the haze in front of a backlight); for dust inside a cone use <LightShaft dust>.
  *
  * Usage
  *   <Motes time={t} area={[3, 8, 3]} count={400} />                                  // dust in a window shaft

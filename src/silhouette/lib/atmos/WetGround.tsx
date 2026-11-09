@@ -98,22 +98,27 @@ void main() {
   vec2 rip = vec2(texture2D(uNoise, wp / 0.7 + vec2(uTime * 0.21, uTime * 0.13)).g, texture2D(uNoise, wp / 0.7 - vec2(uTime * 0.17, -uTime * 0.19)).g) - 0.5;
   vec2 dist = rip * uRipple * 0.012 + (vec2(grit, fine) - 0.5) * 0.006 * rough;
   vec2 uv = vUv.xy / vUv.w + dist;
-  // streaky blur along the reflection's vertical (toward the camera on screen)
-  float L = uStreak * 0.07 * rough + 0.002;
+  // streaky blur along the reflection's vertical (lights smear toward the camera on wet concrete)
+  float L = uStreak * 0.11 * rough + 0.0015;
   vec3 acc = vec3(0.0);
   float ws = 0.0;
-  for (int i = 0; i < 11; i++) {
-    float k = float(i) / 10.0 * 2.0 - 1.0;
-    float w = exp(-k * k * 2.2);
-    acc += texture2D(tDiffuse, uv + vec2(k * L * 0.08, k * L)).rgb * w;
+  for (int i = 0; i < 13; i++) {
+    float k = float(i) / 12.0 * 2.0 - 1.0;
+    float w = exp(-k * k * 1.6);
+    acc += texture2D(tDiffuse, uv + vec2(k * L * 0.05, k * L)).rgb * w;
     ws += w;
   }
   vec3 refl = acc / ws;
+  // anisotropic micro-streaks: fine across x, long along depth -> broken vertical streaks in the reflection
+  float an = texture2D(uNoise, vec2(wp.x / 0.6, wp.y / 9.0)).g * 0.6 + texture2D(uNoise, vec2(wp.x / 0.17, wp.y / 4.0)).a * 0.4;
+  float streaks = mix(1.0, smoothstep(0.15, 0.85, an) * 1.5, 0.75 * rough);
   vec3 V = normalize(cameraPosition - vWorld);
   float cosT = clamp(V.y, 0.0, 1.0);
   float fres = 0.03 + 0.97 * pow(1.0 - cosT, 5.0);
-  float rk = uReflect * mix(0.42 + 0.25 * fine, 1.0, puddle) * (0.3 + 0.7 * fres);
-  vec3 base = uBase * (0.55 + 0.45 * mid) * (0.75 + 0.5 * fine) * mix(1.0, 0.4, puddle);
+  // wet concrete: weak, streaky, patchy (drier areas barely reflect); puddles: near-perfect mirrors
+  float wet = smoothstep(0.2, 0.75, mid * 0.7 + fine * 0.3);
+  float rk = uReflect * mix(0.12 + 0.3 * wet, 1.0, puddle) * mix(streaks, 1.0, puddle) * (0.25 + 0.75 * fres);
+  vec3 base = uBase * (0.55 + 0.45 * mid) * (0.75 + 0.5 * fine) * mix(1.0, 0.35, puddle);
   gl_FragColor = vec4(base + refl * rk, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>

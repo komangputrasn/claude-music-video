@@ -8,9 +8,10 @@
  *   GLSL_ATMOS_FOG        GLSL: `float atmosFogAmount()` = 0..1 scene-fog factor at this fragment (needs the material's
  *                         `fog: true`, THREE.UniformsLib.fog uniforms and #include <fog_pars_vertex>/<fog_vertex>).
  *                         Additive lights multiply by (1 - k·fog) instead of mixing toward the fog colour.
- *   GLSL_BILLBOARD        GLSL: `vec4 atmosBillboard(vec3 centre, vec2 corner, float sizeM, out float energy)` —
- *                         camera-facing quad, at least uMinPx pixels wide (needs uniforms uViewH, uMinPx); `energy`
- *                         (0..1) dims sub-pixel particles so they don't sparkle/alias.
+ *   GLSL_BILLBOARD        GLSL: `vec4 atmosBillboard(vec3 centre, vec2 corner, float sizeM, out float energy,
+ *                         out float viewDepth)` → view-space position of a camera-facing quad corner, at least
+ *                         uMinPx pixels wide (needs uniforms uViewH, uMinPx); `energy` (0..1) dims sub-pixel
+ *                         particles so they don't sparkle/alias; `viewDepth` = distance along the view axis.
  *   blendOf(mode)         'normal' | 'additive' → THREE blending constant.
  *   GroupProps, V3        prop helper types.
  */
