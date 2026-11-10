@@ -7,7 +7,9 @@
  * Here the same pieces are drawn with clamped bases. Same layout, colours and intensities as the lib (Monolith-local
  * coordinates; render it inside the Monolith's group and pass `spill={0}` to the <Monolith>).
  *
- *   <GoldSpill spill={0..1} shatter={0..1 (Monolith shatter clock)} seed?={1} halo?={1} cones?={1} front?={1}/>
+ *   <GoldSpill spill={0..1} shatter={0..1 (Monolith shatter clock)} seed?={1} halo?={1} cones?={1} front?={1} inner?={1} wedge?={1}/>
+ * `inner` scales the light INSIDE the box (interior card + its floor glow), `wedge` the floor wedge in front of it; 0 skips
+ * them. Shot 3's box cheat (common.tsx) draws the inner light with the narrowed box and the rest at the real box.
  * `front` scales the forward cone alone. It is additive haze that runs from the open front toward +Z (room +X), so any
  * figure standing in front of the box from a camera on that side is veiled gold (Pancake reads brown, not black):
  * pass front={0} when the camera looks into the box's front past a silhouette.
@@ -215,8 +217,9 @@ const frontOpenAt = (tau: number) => {
   return smooth01(u * u * 1.4);
 };
 
-export const GoldSpill: React.FC<{spill: number; shatter: number; seed?: number; halo?: number; cones?: number; front?: number}> = ({
-  spill, shatter, seed = 1, halo = 1, cones = 1, front = 1,
+export const GoldSpill: React.FC<{spill: number; shatter: number; seed?: number; halo?: number; cones?: number; front?: number;
+  inner?: number; wedge?: number}> = ({
+  spill, shatter, seed = 1, halo = 1, cones = 1, front = 1, inner = 1, wedge = 1,
 }) => {
   const sp = clamp01(spill);
   const tau = clamp01(shatter) * SIM;
@@ -230,21 +233,28 @@ export const GoldSpill: React.FC<{spill: number; shatter: number; seed?: number;
   );
   useLayoutEffect(() => () => mat.dispose(), [mat]);
   useLayoutEffect(() => {
-    mat.uniforms.uColor.value.set(S.dawnGold).multiplyScalar(1.5 * sp);
+    mat.uniforms.uColor.value.set(S.dawnGold).multiplyScalar(1.5 * sp * inner);
   });
   if (sp <= 0.001) return null;
   return (
     <group userData={{silKeep: true}}>
-      <mesh geometry={getCard()} material={mat} renderOrder={3} />
-      <FloorGlow position={[0, FOOT + T, 0]} size={[W - 2 * T, D - 2 * T]} color={S.dawnGold} intensity={0.8 * sp} softness={0.5} breakup={0.2} />
+      {inner > 0 ? (
+        <>
+          <mesh geometry={getCard()} material={mat} renderOrder={3} />
+          <FloorGlow position={[0, FOOT + T, 0]} size={[W - 2 * T, D - 2 * T]} color={S.dawnGold} intensity={0.8 * sp * inner} softness={0.5}
+            breakup={0.2} />
+        </>
+      ) : null}
       <GlowBillboard position={[0, 0.5, -D / 2 - 0.13]} color={S.dawnGold} intensity={halo * 0.34 * sp * (0.35 + 0.65 * Math.max(frontOpen, holeOpen))}
         size={1.2} falloff={1.7} floor={0.5} floorSoft={0.4} />
       <SafeCone from={[0, BROW_Y0 + 0.02, FZ - 0.08]} to={[0, 2.4, 0.32]} radiusStart={0.12} radiusEnd={0.6}
         intensity={cones * 0.3 * sp * holeOpen} edge={1.8} falloff={1.3} />
       <SafeCone from={[0, 0.46, 0.02]} to={[0, -0.12, 1.75]} radiusStart={0.28} radiusEnd={0.95}
         intensity={front * cones * 0.2 * sp * frontOpen} edge={1.6} falloff={1.1} floorY={0} floorSoft={0.3} />
-      <SafeWedge position={MONOLITH.spillFloor as V3} size={[2.1, 2.5]} near={0.3} far={1} intensity={(0.2 + 1.05 * frontOpen) * sp}
-        softness={0.55} breakup={0.4} seed={seed} />
+      {wedge > 0 ? (
+        <SafeWedge position={MONOLITH.spillFloor as V3} size={[2.1, 2.5]} near={0.3} far={1} intensity={(0.2 + 1.05 * frontOpen) * sp * wedge}
+          softness={0.55} breakup={0.4} seed={seed} />
+      ) : null}
     </group>
   );
 };

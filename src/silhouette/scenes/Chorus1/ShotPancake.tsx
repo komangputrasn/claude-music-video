@@ -74,7 +74,9 @@ export const ShotPancake: React.FC<ShotProps> = ({t, f}) => {
       <LitWall />
       {/* light washing the foot of the wall (behind them: they stay black) */}
       <Backlight position={[0, 1.4, WALL_Z + 0.4]} size={[60, 5]} shape="slab" softness={0.9} intensity={0.32} time={t} />
-      <WorldLyric line={17} time={t} mode="paint" color={GREYS.g1} intensity={1} size={0.6} maxWidth={12.5} position={[0, 3.6, WALL_Z + 0.03]} until={SHOT_F.t1 + 0.05} />
+      {/* LOCKED's onset flash is capped at ~1.1× (the default 1.45× red paint tone-maps orange for its 0.22 s) */}
+      <WorldLyric line={17} time={t} mode="paint" color={GREYS.g1} intensity={1} size={0.6} maxWidth={12.5} position={[0, 3.6, WALL_Z + 0.03]} until={SHOT_F.t1 + 0.05}
+        glow={(i, w) => (w.since < 0.22 ? 0.76 : 1)} />
       <LightPool position={[0.25, 0, -0.9]} radius={1.3} color={S.authRed} intensity={0.75} haze={0.55} hazeHeight={1.4} />
       <Monolith position={[0.42, 0, 0]} time={t} intensity={1.35 + 0.25 * bass} irisGlow={0.5} />
       <SilPancake

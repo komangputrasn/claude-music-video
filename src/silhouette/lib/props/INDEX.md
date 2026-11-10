@@ -20,6 +20,7 @@ import {
   PlainBowl, PLAINBOWL,                                         // Pancake's bowl in the gold pool (Final, Outro)
   SilPhone, HeldSilPhone, SILPHONE, SILPHONE_DEFAULT_LINES,     // flip phone (Swing, Cancel, Hold)
   SilEReader, HeldSilEReader, SILEREADER, SILEREADER_TEXT,      // the e-reader losing 1984 (V1Feeder)
+  HELD_SILEREADER, heldSilEReaderMatrix,                        //   its grip transforms ('read' / 'show')
   KibbleSparks, KIBBLE_SPARKS,                                  // gold-spark kibble (used by Monolith; standalone too)
   GlowBillboard, FloorGlow, SoftCone, GRIP,                     // small helpers (see "Helpers" below)
 } from '../../lib/props';
@@ -190,7 +191,11 @@ it.
 - The origin is the base centre, resting on y = 0 (the mattress top).
 - The iris lies on the top surface (normal ≈ +Y, tilted 4° toward +Z), with its "up" toward −Z.
 - `irisAt` slides the eye toward the +Z edge.
-- For a pillow propped against a headboard, rotate the group about X (for example `rotation-x={-1.1}`).
+- For a pillow propped against a headboard, rotate the group about X by a **positive** angle: `rotation-x={1.1}` stands
+  it up with its base toward −Z (the headboard) and the eye toward +Z, in the lower half of the face (`irisAt={0}`
+  centres it). In three.js a positive X rotation turns +Y toward +Z; a negative angle such as −1.1 turns the eye toward
+  −Z, away from a camera at the foot of the bed (verified in a test render: that camera sees only the underside). Hold
+  uses `rotation-x={π/2 + tilt}` with `irisAt={0}`.
 - `PILLOW = {size, top 0.125, irisCenter [0, 0.123, 0.051], irisNormal, irisRadius 0.072}`.
 - **In the `CellRoom` bed:** pass it as `pillowSlot` with `pillow={false}`. The slot origin is the pillow *centre*
   (`CELL_PILLOW_LOCAL`, 0.075 above the mattress) and the set's pillow is 0.52 × 0.15 × 0.38, so use
@@ -254,11 +259,30 @@ The bowl and Pancake stay pure black against the pool.
 
 ## `<SilEReader>` / `<HeldSilEReader>`: the e-reader losing 1984
 ```tsx
-<SilEReader progress?={0} vent?={[x, y, z] /* WORLD */} rise?={1.5} text?={SILEREADER_TEXT} title?="1984" pale?={0.82}
-            ink?={GREYS.g3} ash?={GREYS.g7} ventRed?={1.3} flakes?={5} flakeSize?={1} seed?={1} rim? color? fog? {...group}/>
+<SilEReader progress?={0} vent?={[x, y, z] /* WORLD */} rise?={1.5} text?={SILEREADER_TEXT} title?="1984"
+            subtitle?="PART ONE" pale?={0.82} ink?={GREYS.g3} ash?={GREYS.g7} ventRed?={1.3} flakes?={5} flakeSize?={1}
+            seed?={1} rim? color? fog? {...group}>{page content (optional)}</SilEReader>
 <HeldSilEReader mode?='read'|'show' {...same}/>
 ```
-**The page:** a **pale rectangle** (a bone screen at 0.82, not a light source) in a black device.
+**The page:** a **pale rectangle** (a bone screen at 0.82, not a light source) in a black device. The printed page is
+`title` (big heading), `subtitle` (the small line under it, `'PART ONE'` by default, e.g. `'GEORGE ORWELL'`) and the
+`text` body (auto-wrapped filler). `''` leaves any of the three out. All three peel off with `progress`.
+
+**Page content slot (`children`).** Children are drawn in the **page frame**: origin = the screen centre on its
+surface, +X right, +Y text-up, +Z out of the page toward the reader, metres. The screen is 0.09 × 0.12
+(x ±0.045, y ±0.06). They sit 1.5 mm in front of the printed words, are `silKeep` (they keep their own look inside
+`<SilGuy>`), and do **not** peel or turn to ash. `SILEREADER.page = {size, body, titleY, subtitleY}`, where
+`body = {x0, x1, width, yTop, yBottom}` is the block the filler is set in under the header (x ±0.037, cap top 0.031,
+last baseline −0.055). Example: the sung line printed on the page as it is sung, under "1984 / GEORGE ORWELL":
+```tsx
+const b = SILEREADER.page.body;
+<HeldSilEReader text="" subtitle="GEORGE ORWELL">
+  <WorldLyric line={4} time={t} mode="paint" color={GREYS.g2} fog={false} size={0.0075} align="left" anchor="top"
+    maxWidth={b.width} renderOrder={3} position={[b.x0, b.yTop, 0]} />
+</HeldSilEReader>
+```
+Pass `renderOrder` ≥ 3 to transparent children (the printed words draw at 2). Verified in a test render, face-on and
+held in 'read' mode from the `f00306` camera.
 
 **`progress`** (0..1) runs the loss:
 - The printed words peel off roughly top to bottom.
@@ -274,7 +298,14 @@ The bowl and Pancake stay pure black against the pool.
 - `flakeSize` should be 1 for close-ups and **about 2.5–3 in wide shots**, or the stream does not read (`f00320.jpg`).
 
 **Frame:** the device centre is the origin, the screen faces +Z, and the device stands upright. It measures
-0.122 × 0.172 × 0.0095. `SILEREADER = {size, screenCenter, screenSize}`.
+0.122 × 0.172 × 0.0095. `SILEREADER = {size, screenCenter, screenSize, page}`.
+
+**Grip transforms.** `HELD_SILEREADER.read` / `.show` = `{position, rotation}` of the device centre in the right-hand
+grip frame, exactly what `<HeldSilEReader mode>` applies. `heldSilEReaderMatrix(mode)` is the same as a Matrix4, so the
+held device's world matrix is
+`root.multiply(guyJointMatrix(pose, 'gripR', {R: true})).multiply(heldSilEReaderMatrix('read'))` (root = the Guy's
+position/yaw), and a page point is `new THREE.Vector3(x, SILEREADER.screenCenter[1] + y, SILEREADER.size[2] / 2)` through
+it — e.g. to aim an insert camera at the page or work out its text-up direction.
 
 **Held modes:**
 - **`mode='read'`** (the default) is for `mergePose(guyHoldUp(0, t), {headPitch: 0.5})`. The fist holds the bottom edge at

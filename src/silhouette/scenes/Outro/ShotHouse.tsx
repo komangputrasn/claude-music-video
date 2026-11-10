@@ -17,7 +17,7 @@ export const ShotHouse: React.FC<{t: number; f: number}> = ({t}) => (
     <CameraRig position={CAM_A} target={pitchTarget(CAM_A, PITCH_A)} fov={FOV_A} />
     <World t={t} cam={CAM_A} sunElev={sunElev(t)} />
     <HouseCube time={t} warmWindow={1} doorOpen={1} interior={0.9} interiorColor={S.dawnGold} stencil="UNIT 0315"
-      doorIris={{radius: 0.22, intensity: 0, open: 0.0001, glow: 0, glint: false}} irisLight={0} />
+      doorIris={{radius: 0.22, intensity: 0, open: 0.0001, glow: 0}} irisLight={0} />
     <Porch t={t} rim={0.4} />
   </SilStage>
 );

@@ -6,12 +6,12 @@ import React, {useMemo} from 'react';
 import {S, GREYS, cameraFovForVisible} from '../../lib/palette';
 import {CameraRig} from '../../lib/SilStage';
 import {SilGuy} from '../../lib/SilCast';
-import {WorldLyric} from '../../lib/WorldLyric';
+import {WorldLyric, measureLyric} from '../../lib/WorldLyric';
 import {Backlight, WetGround, FogLayers} from '../../lib/atmos';
 import {TenureScreen, screenDims} from '../../lib/tenure';
 import {bassAt, lerp} from '../../../lib/time';
 import {guyWalk, GUY} from '../../../lib/characters/Guy';
-import {ShotProps, prog, easeInOut, BoxRow, CancelButton, rowsPerWord, RIM_RED} from './common';
+import {ShotProps, prog, easeInOut, BoxRow, CancelButton, RIM_RED} from './common';
 
 export const SHOT_D = {t0: 70.24, t1: 74.61};
 export const FOG_D = {color: S.ash, near: 30, far: 520};
@@ -19,9 +19,10 @@ export const FOG_D = {color: S.ash, near: 30, far: 520};
 const WALK = GUY.strideLength * 0.94; // m/s
 const SCREEN = {width: 40, height: 22, content: {chrome: true, lines: [], header: 'TENURE · ACCOUNT', footer: 'CANCELLATION REQUESTS ARE PROCESSED WITHIN 30–90 BILLING CYCLES · TERMS 14.3(b)'}};
 
-const EM = 2.75;
+const EM = 2.75; // em of the screen lyric, unless the wider row would fill more than FIT of the face
+const FIT = 0.85; // >= 15% margin on any font (measured at runtime)
 const PILLAR_X = 23;
-const ROWS15 = rowsPerWord(15, EM, [[0, 1, 2], [3, 4, 5]]);
+const ROWS15 = [[0, 1, 2], [3, 4, 5]];
 
 export const ShotCancel: React.FC<ShotProps> = ({t, f}) => {
   const lt = t - SHOT_D.t0;
@@ -34,6 +35,7 @@ export const ShotCancel: React.FC<ShotProps> = ({t, f}) => {
   const dims = screenDims({width: SCREEN.width, height: SCREEN.height});
   const faceZ = sz + dims.depth + 0.06;
   const faceY0 = 2.2 + dims.border;
+  const em = useMemo(() => Math.min(EM, (EM * FIT * SCREEN.width) / Math.max(...measureLyric(15, EM, undefined, {rows: ROWS15}).rowWidths)), []);
   const pillars = useMemo(() => {
     const out: [number, number, number][] = [];
     // tight to the screen (its outer edge is at ±20.4 m), so the colonnade converges on it in one-point perspective
@@ -54,7 +56,7 @@ export const ShotCancel: React.FC<ShotProps> = ({t, f}) => {
       {/* the receding screen + button */}
       <group position={[0, 0, 0]}>
         <TenureScreen position={[0, 2.2, sz]} width={SCREEN.width} height={SCREEN.height} content={SCREEN.content} time={t} pulse={bass * 0.7} haze={0.25} intensity={1.1} />
-        <WorldLyric line={15} time={t} mode="screen" size={EM} position={[0, faceY0 + SCREEN.height * 0.73, faceZ]} until={SHOT_D.t1 + 0.05} perWord={ROWS15} />
+        <WorldLyric line={15} time={t} mode="screen" size={em} rows={ROWS15} anchor="baseline" position={[0, faceY0 + SCREEN.height * 0.73, faceZ]} until={SHOT_D.t1 + 0.05} />
         <CancelButton width={16} intensity={1.0 + 0.25 * bass} halo={0.4} position={[0, faceY0 + SCREEN.height * 0.26, faceZ + 0.02]} />
       </group>
       <SilGuy pose={guyWalk(t)} rotation-y={Math.PI} position={[0, 0, gz]} rim={{...RIM_RED, strength: 0.6, dir: [0, 1]}} />

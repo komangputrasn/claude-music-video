@@ -6,14 +6,14 @@
 // pancakeWaitSit(t, touch): Pancake sitting, ears low, tail STILL (tailWagAmount 0), looking up at him; when his hand
 // lands (touch 0..1) the head dips into the hand and tilts.
 //
-// Head pitch is kept low (0.1–0.14): the SilGuy hood's back drape rotates with the head, and a pitched-down head swings
-// it off the shoulders into a "ponytail" in strict profile. He looks down through the torso lean instead.
+// He looks down at the dog (head pitch 0.26 kneeling, 0.32 while his hand is out): the lib hood is one skinned cowl, so
+// the bowed head keeps one continuous line from the crown into the shoulders in strict profile.
 import {guyIdle, mixPose, mergePose, GuyPose} from '../../../lib/characters/Guy';
 import {pancakeBeg, PancakePose} from '../../../lib/characters/Pancake';
 
 const KNEEL: GuyPose = {
   torsoBend: 0.3,
-  headPitch: 0.12,
+  headPitch: 0.26,
   headTilt: 0.12,
   // far (left) leg forward, foot planted, knee up; near (right) leg kneeling, shin flat behind
   legL: {hipX: 1.57, hipZ: 0.1, hipY: 0.05, knee: 1.57},
@@ -67,7 +67,7 @@ export const guyKneelPat = (k: number, r: number, s: number, t: number): GuyPose
     wristZ: lerp(0, HAND.wristZ, w),
     grip: lerp(rest.grip!, HAND.grip, w),
   };
-  p = mergePose(mixPose(p, mergePose(p, {headPitch: 0.14, torsoBend: REACH_BEND}), w), {armR: r > 0 ? arm : p.armR});
+  p = mergePose(mixPose(p, mergePose(p, {headPitch: 0.32, torsoBend: REACH_BEND}), w), {armR: r > 0 ? arm : p.armR});
   return {...p, expression: 'sad', mouthOpen: 0};
 };
 

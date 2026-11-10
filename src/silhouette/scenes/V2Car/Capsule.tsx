@@ -2,8 +2,8 @@
  * <Capsule> — the car of the TERMS cut: a smooth black pod (a superellipsoid, no brand cues, no visible wheels) with a
  * wrap-around glass band, a gull-wing door, a frost-white seat inside, and the TENURE iris on its tail. Local to V2Car.
  *
- *   <Capsule time seatGlow? frost? door? doorSide? iris? irisOpen? readout? rim? cabinGlow? headlights? interior?
- *            {...group}>{driver}</Capsule>
+ *   <Capsule time seatGlow? frost? door? doorSide? iris? irisOpen? readout? rim? cabinGlow? frontGlow? seatBack?
+ *            headlights? interior? {...group}>{driver}</Capsule>
  *
  *   Frame: origin on the road under the pod's centre, the nose toward +Z (like every character/prop in this repo).
  *   Geometry: ring slices of a superellipsoid (exact horizontal glass-band edges, 4 pillars), then a "sleek" deform
@@ -16,6 +16,10 @@
  *   door      0..1 the gull-wing door on side `doorSide` (local x sign) lifts about the roof edge.
  *   iris      0..1 brightness of the red TENURE iris on the tail (+ thin red ring around the tail).
  *   readout   show the red "THERMAL TIER" readout strip on the nose (shot 1).
+ *   frontGlow 0..1 the seat's cold light caught in the frosted front of the cabin: a soft frost-white glow just behind
+ *             the yoke, facing the TAIL. Seen from behind, the driver's head and shoulders stand black against it.
+ *   seatBack  height scale of the seat back (1 = full back + headrest). Below 1 the headrest is dropped and the back
+ *             ends lower: 0.5 puts its top below his shoulders, so a camera behind the pod sees his bust over it.
  *   children  render in pod space: put the seated driver at CAPSULE.seatRoot with guySitOn(CAPSULE.seatH).
  * Pure function of props; geometry/textures cached at module level; materials per instance, uniforms set in
  * useLayoutEffect.
@@ -227,7 +231,8 @@ varying vec3 vV;
 #include <common>
 #include <fog_pars_fragment>
 void main() {
-  float fres = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2);
+  // max(): |dot| of two unit vectors can round past 1 face-on; pow() of a negative base is NaN under ANGLE/D3D11
+  float fres = pow(max(1.0 - abs(dot(normalize(vN), normalize(vV))), 0.0), 2.2);
   vec2 q = vec2(vP.z * 0.55 + vP.x * 0.35, vP.y * 0.9);
   float n = texture2D(uNoise, q * 0.9).r * 0.6 + texture2D(uNoise, q * 3.1 + 0.37).g * 0.4;
   float grain = texture2D(uNoise, q * 9.0).a;
@@ -387,6 +392,10 @@ export type CapsuleProps = GroupProps & {
   rim?: RimOpts | null;
   /** extra cold haze inside the cabin behind the driver (0..1) */
   cabinGlow?: number;
+  /** 0..1 frost-white glow in the front of the cabin, facing the tail (a backdrop for the driver seen from behind) */
+  frontGlow?: number;
+  /** seat-back height scale (1 = full back + headrest; < 1 drops the headrest) */
+  seatBack?: number;
   /** hide the interior (far shots) */
   interior?: boolean;
   /** 0..1 the two headlight slits on the nose (+ their light on the road ahead) */
@@ -396,7 +405,7 @@ export type CapsuleProps = GroupProps & {
 
 export const Capsule: React.FC<CapsuleProps> = ({
   time, seatGlow = 0, frost = 0, door = 0, doorSide = 1, iris = 0, irisOpen = 1, readout = 0, rim = null, cabinGlow = 0,
-  interior = true, headlights = 0, children, ...group
+  frontGlow = 0, seatBack = 1, interior = true, headlights = 0, children, ...group
 }) => {
   const pod = getPod(doorSide);
   const seat = getSeatGeo();
@@ -412,10 +421,11 @@ export const Capsule: React.FC<CapsuleProps> = ({
     const red = new THREE.MeshBasicMaterial({color: S.authRed, fog: true, toneMapped: true});
     const read = new THREE.MeshBasicMaterial({map: getReadoutTex(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true});
     const haze = new THREE.MeshBasicMaterial({map: hazeTex(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true, color: 0});
+    const front = new THREE.MeshBasicMaterial({map: glowTex(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true, color: 0});
     // headlight spill on the road ahead (local: the lib FloorGlow wedge can produce NaN at its far edge → black frames)
     const beam = new THREE.MeshBasicMaterial({map: beamTex(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
       fog: true, color: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2});
-    return {body, glass, seatM, dark, red, read, haze, beam};
+    return {body, glass, seatM, dark, red, read, haze, front, beam};
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useLayoutEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats]);
   useLayoutEffect(() => {
@@ -426,8 +436,11 @@ export const Capsule: React.FC<CapsuleProps> = ({
     // below SilStage's 0.86 threshold, so it does not spread a grey veil over the driver's silhouette
     mats.seatM.color.setScalar(0.04 + 0.78 * seatGlow);
     mats.red.color.set(S.authRed).multiplyScalar(0.2 + 1.2 * iris);
-    mats.read.color.setScalar(readout * 1.15);
+    // ≤ ~0.9 linear: brighter, ACES desaturates the thin red letters toward coral
+    mats.read.color.setScalar(readout * 0.78);
     mats.haze.color.setScalar(0.3 * cabinGlow * seatGlow);
+    // seen through the tinted rear glass (×0.78) it stays under the 0.86 bloom threshold: no veil over his head
+    mats.front.color.setScalar(0.95 * frontGlow);
     mats.beam.color.setScalar(0.24 * headlights);
   });
   const theta = door * 1.25 * doorSide;
@@ -458,9 +471,15 @@ export const Capsule: React.FC<CapsuleProps> = ({
           {/* the seat (frost-white light) */}
           <mesh geometry={seat.cushion} material={mats.seatM} position={[0, 0.39, -0.14]} />
           <group position={[0, 0.44, -0.44]} rotation={back}>
-            <mesh geometry={seat.back} material={mats.seatM} position={[0, 0.43, 0]} />
-            <mesh geometry={seat.head} material={mats.seatM} position={[0, 0.97, 0.01]} />
+            <mesh geometry={seat.back} material={mats.seatM} position={[0, 0.03 + 0.4 * seatBack, 0]} scale={[1, seatBack, 1]} />
+            {seatBack >= 1 ? <mesh geometry={seat.head} material={mats.seatM} position={[0, 0.97, 0.01]} /> : null}
           </group>
+          {/* the cold light caught in the front of the cabin, facing the tail (shot 2 sees him against it) */}
+          {frontGlow > 0 ? (
+            <mesh material={mats.front} position={[0, 1.08, 0.8]} rotation-y={Math.PI} scale={[1.25, 0.9, 1]}>
+              <planeGeometry />
+            </mesh>
+          ) : null}
           {/* cold haze in the cabin, behind the driver */}
           {cabinGlow > 0 ? (
             <mesh material={mats.haze} position={[0, 0.95, -0.55]} scale={[1.6, 1.1, 1]}>
@@ -521,6 +540,31 @@ function beamTex() {
   beamT = new THREE.CanvasTexture(c);
   beamT.colorSpace = THREE.SRGBColorSpace;
   return beamT;
+}
+
+let glowT: THREE.CanvasTexture | null = null;
+/** a soft frost-white panel: flat across the middle, feathered to black at every edge */
+function glowTex() {
+  if (glowT) return glowT;
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 64;
+  const g = c.getContext('2d')!;
+  const img = g.createImageData(128, 64);
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 128; x++) {
+      const ex = Math.abs(x / 63.5 - 1), ey = Math.abs(y / 31.5 - 1);
+      const fx = 1 - smoothstep(0.6, 1, ex), fy = 1 - smoothstep(0.6, 1, ey);
+      const v = Math.round(255 * fx * fy);
+      const i = (y * 128 + x) * 4;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  glowT = new THREE.CanvasTexture(c);
+  glowT.colorSpace = THREE.SRGBColorSpace;
+  return glowT;
 }
 
 let hazeT: THREE.CanvasTexture | null = null;

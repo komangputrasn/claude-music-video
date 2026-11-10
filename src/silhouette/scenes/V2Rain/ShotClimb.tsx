@@ -4,9 +4,10 @@
  * opening. He climbs in as a black shape against it (guyClimb), lands crouched under the sill. On "cops" two drones
  * hang outside in the rain and their red searchlight cones come in through the window and sweep the floor (a red band
  * also runs through the window light). He is drawn after the cones (<SilOver>), so they read as passing behind him and
- * he stays a clean black cut-out; the bone glow under the sill turns into their red spill (no pink). He is clipped at
- * the sill while still outside (guyClimb's knee passes through the wall). The sung line hangs in the haze in two blocks that
- * flank the window — "SO I CLIMBED / THROUGH MY / WINDOW," left, "AND THE COPS / CAME TOO." right.
+ * he stays a clean black cut-out; the bone glow under the sill turns into their red spill (no pink), and the city glow in
+ * the window drops just ahead of them, so the red REPLACES the white there instead of adding to it (red added onto the
+ * bright window read salmon); where the two cones overlap they dim, so the sum stays red, not coral. He is clipped at the sill while still outside (guyClimb's knee passes through the wall).
+ * The sung line hangs in the haze in two blocks that flank the window — "SO I CLIMBED / THROUGH MY / WINDOW," left, "AND THE COPS / CAME TOO." right.
  */
 import React from 'react';
 import {SilStage, CameraRig} from '../../lib/SilStage';
@@ -51,21 +52,44 @@ export const ShotClimb: React.FC<{t: number; abs: number}> = ({t, abs}) => {
     // (the beam centre must cross the window plane within |x| ≲ 0.5 or its edge clips the jambs)
     // (lamp at y 4.4: the beam centre crosses the wall at y 1.5–1.75 with r ≈ 0.3, clear of the sill at 1.0 and the
     //  jambs at |x| 0.85 — lower lamps clip the sill and the dropped rays leave a black bite in the window corner)
+    // (floor sweep to ∓0.74, not 0.85: at the end of the shot the right beam's edge reached the blind stack by the
+    //  right jamb and its dropped rays cut a black wedge into the beam for the last 5 frames)
     const src: V3 = [s * 0.35 + 0.1 * Math.sin(sw * 0.9 + s), 4.4 + 0.04 * Math.sin(sw * 2.1 + s), 9.0];
-    const tx = s * lerp(0.45, -0.85, 0.5 - 0.5 * Math.cos(Math.max(0, sw) * 0.95 + (s > 0 ? 0.8 : 0)));
+    const tx = s * lerp(0.45, -0.74, 0.5 - 0.5 * Math.cos(Math.max(0, sw) * 0.95 + (s > 0 ? 0.8 : 0)));
     const tz = lerp(-1.25, -2.1, 0.5 + 0.5 * Math.sin(sw * 0.6 + s));
     return {src, to: [tx, FLOOR, tz] as V3};
   });
   // the red band through the window light, back and forth while the cones are on
   const scan = on > 0 ? 0.5 + 0.48 * Math.sin(sw * 1.3 - 1.2) : null;
+  // red never ADDS onto bone (that reads pink/salmon): the window's city glow drops to 10 % and the bone glow under the
+  // sill goes out just AHEAD of the cones (0.25 s lead, so even their faint first frames land on dark, not on light
+  // grey), and the sill glow hands over bone → red without overlapping (red from on 0.45)
+  const dim = s01(t, W.cops - 0.25, W.cops + 0.1);
+  const outsideK = 1 - 0.9 * dim;
+  const boneK = 1 - dim;
+  const redK = clamp01((on - 0.45) / 0.55);
 
   const camZ = lerp(-4.7, -4.35, u);
+  // where the two cones overlap ON SCREEN (window top and middle rows), their sum tone-mapped coral, (245, 97, 74):
+  // each beam dims by up to 45 % there, so the overlap reads like one beam (red). Camera ≈ [0, 1.45, camZ] looking +Z.
+  const beamRow = (d: {src: V3; to: V3}, Y: number) => {
+    const [x0, y0, z0] = d.src;
+    const dx = d.to[0] - x0, dy = d.to[1] - y0, dz = d.to[2] - z0;
+    const f = (Y * (z0 - camZ) - (y0 - 1.45)) / (dy - Y * dz);
+    const z = z0 + dz * f - camZ;
+    return {x: (x0 + dx * f) / z, w: (R0 + (R1 - R0) * f) / z};
+  };
+  const overlapAt = (Y: number) => {
+    const a = beamRow(drones[0], Y), b = beamRow(drones[1], Y);
+    return clamp01(1 - Math.abs(a.x - b.x) / (a.w + b.w));
+  };
+  const beamK = 0.55 * on * (1 - 0.45 * Math.max(overlapAt(0.14), overlapAt(0.04)));
   return (
     <SilStage fog={{color: GREYS.g2, near: 14, far: 80}}>
       <CameraRig position={[0, 1.45, camZ]} target={[0, 1.5, 2.25]} fov={cameraFovForVisible(23)} />
       <CellRoom time={t} hideWalls={['back']} hide={['bed', 'pillow', 'blanket', 'printer', 'page']} blinds={{angle: 0.7, traverse: 0.92}}
         windowLight={{intensity: 0.9, dir: [0, -0.2, -1], scan, scanIntensity: 1.2 * on}}
-        outside={{intensity: 0.85 + 0.08 * bass}} doorLeak={0.4}>
+        outside={{intensity: (0.85 + 0.08 * bass) * outsideK}} doorLeak={0.4}>
         {/* drawn after the red cones (they land on the floor in FRONT of him and would tint his legs red), and clipped
             at the sill while he is still outside (guyClimb's rising knee pokes through the wall under the sill) */}
         <SilOver clipBelow={clipY}>
@@ -76,11 +100,12 @@ export const ShotClimb: React.FC<{t: number; abs: number}> = ({t, abs}) => {
       </CellRoom>
       {/* a low glow on the wall under the sill (window light bouncing off the wet sill and floor), so his legs stay a
           black shape as he drops in and lands — otherwise black on the dark wall until the cones arrive. When the cones
-          come on it turns into their red spill: red added over a bone glow reads salmon/pink, not authRed */}
+          come on it turns into their red spill: red added over a bone glow reads salmon/pink, not authRed, so the two
+          never overlap (boneK / redK) */}
       <Backlight position={[0, 0.55, 2.238]} rotation-y={Math.PI} size={[2.6, 1.3]} shape="radial" softness={0.9} noise={0.1}
-        intensity={(0.42 + 0.04 * bass) * (1 - on)} opacity={on < 1 ? 1 : 0} time={t} />
+        intensity={(0.42 + 0.04 * bass) * boneK} opacity={boneK > 0 ? 1 : 0} time={t} />
       <Backlight position={[0, 0.55, 2.236]} rotation-y={Math.PI} size={[2.6, 1.3]} shape="radial" softness={0.9} noise={0.1}
-        color={S.authRed} intensity={0.4 * on} opacity={on > 0 ? 1 : 0} time={t} />
+        color={S.authRed} intensity={0.4 * redK} opacity={redK > 0 ? 1 : 0} time={t} />
       {/* rain outside the window */}
       <SilRain time={t} position={[0, -2, 8]} area={[10, 9, 9]} count={2600} length={0.7} width={0.008} wind={[-1.2, 0]} intensity={0.5} splashes={0} />
       {on > 0
@@ -88,8 +113,10 @@ export const ShotClimb: React.FC<{t: number; abs: number}> = ({t, abs}) => {
             <group key={k}>
               {/* one volume per beam, drone → floor. It is drawn from its hull's back faces, so the beam must clear the
                   sill: shallow beams through the middle of the opening (rays whose back face sits behind the wall drop) */}
+              {/* (intensity 0.55: at 1.0 a beam core tone-mapped coral, (248, 86, 75); where the two beams overlap on
+                  screen both dim further (beamK), so their sum stays red too) */}
               <LightShaft from={d.src} to={d.to} radiusStart={R0} radiusEnd={R1} color={S.authRed}
-                intensity={1.0 * on} source={0.9 * on} time={t} dust={60} seed={k + 11} ground={FLOOR} groundFade={0.22} />
+                intensity={beamK} source={0.9 * on} time={t} dust={60} seed={k + 11} ground={FLOOR} groundFade={0.22} />
               <LightPool position={[d.to[0], 0.005, d.to[2]]} radius={R1} color={S.authRed} intensity={0.85 * on} haze={0} />
             </group>
           ))

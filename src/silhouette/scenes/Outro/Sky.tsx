@@ -64,7 +64,9 @@ void main() {
     float fk = float(k);
     float yc = uBandH * (0.9 + 1.6 * fk + 0.3 * sin(fk * 3.1));
     float th = uBandH * (0.10 + 0.07 * fk);
-    float band = exp(-pow((y - yc) / th, 2.0));
+    // a square written as q * q: pow() of a negative base (every pixel below yc) is NaN under ANGLE/D3D11/Metal
+    float q = (y - yc) / th;
+    float band = exp(-q * q);
     float n = vn(vec2(sx * (1.5 + fk) + uTime * 0.02 * (1.0 + fk), fk * 7.3));
     st += band * smoothstep(0.35, 0.8, n);
   }

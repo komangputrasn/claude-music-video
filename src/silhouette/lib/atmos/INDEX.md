@@ -65,6 +65,24 @@ softness?={1.4} striation?={0.5} source?={0} ground?={0} groundFade?={0.35} dust
 - **`ground` / `groundFade`:** the beam dissolves into the floor. The hull (16 rings along the axis) is also flattened
   onto y = `ground`. Pass the real floor height, or `-1e4` when there is no floor. End a beam that hits the floor on
   the floor (`to[1]` = ground).
+- **Through a window (or any opening) from outside:** each pixel's ray is drawn where it **leaves** the hull (its back
+  face). Wherever that exit point lies behind the wall, the sill, a jamb or anything opaque in the opening (stacked
+  blinds), the depth test drops the **whole ray**, and the beam inside the room gets a hard black **"bite"**.
+  - Keep the beam's whole cross-section inside the clear opening where it crosses the wall plane: centre at
+    |x| ≲ 0.5 and mid-height in the 1.7 × 1.45 m `CellRoom` window (sill y 1.0, jambs x ±0.85), radius ≲ 0.3 there.
+    Steep, low beams clip the sill. Verified in a test render: lamps at y 3.45, z 9 aimed at the floor 1.6 m inside
+    leave two black half-discs along the sill and notches by the blind stacks; V2Rain ShotClimb's working numbers are
+    lamps at y 4.4, z 9, |x| ≤ 0.45, `radiusStart` 0.06, `radiusEnd` 0.45, landing at z −1.25…−2.1 (see its NOTES).
+  - Do not split a beam at the wall into an outside and an inside piece: the inside piece's rays then exit through its
+    open start and the result is worse (V2Rain NOTES).
+  - Keep beams off furniture inside the room for the same reason (in V2Rain the bed cut black holes into the cones).
+- **Floor footprint:** V2Rain saw a black footprint where the flattened hull was coplanar with the floor and fixed it by
+  lifting `ground` (and `to[1]`) **2 cm above the floor** (`FLOOR = 0.02` in ShotClimb). A quick test over the
+  `CellRoom` floor (bone beams, steep and grazing cameras, a `LightPool` under them) did not reproduce the footprint,
+  but the lift costs nothing: do it whenever a beam ends on a floor.
+- **A beam between the camera and a silhouette** paints over it: the clean cut-out only holds where the beam's back
+  faces are behind the figure. Wrap the figure so it draws after the volume (V2Rain's local `<SilOver>`), or keep the
+  beam behind it.
 - Also exported: `makeShaftVolumeMaterial()`, `getShaftHull()`, `GLSL_SHAFT_VOLUME`. `LightPool` uses these for its
   haze.
 
@@ -143,6 +161,10 @@ resolution?={0.5}/>`
   - Fresnel makes the ground most mirror-like at grazing angles, as with a long lens and a low camera.
   - `ripple` animates rain ripples and needs `time`. Scene fog applies.
 - **Cost:** one extra full scene render per frame. Use **one WetGround per shot**.
+- **High crane angles show the tiling.** Seen from high above (Final's crane: 84 m up, 440 m out), partial puddle
+  coverage reads as a regular tiled grid of puddles and joints in the reflection between the blocks. `puddles={1}` (one
+  flooded mirror) has no pattern; Final's crane uses it at `reflectivity` 0.55. Verified in a test render from that
+  camera: `puddles` 0.5 shows the grid, 1 is clean. Low, long-lens cameras (most shots) do not show it.
 
 ### `<Motes>`: floating dust and ash
 `<Motes count?={600} area?={[10,6,10]} time? color?={S.bone} size?={0.012} drift?={[0.03,0.05,0]} wander?={0.25}

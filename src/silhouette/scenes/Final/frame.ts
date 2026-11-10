@@ -29,3 +29,14 @@ export const pitchTarget = (cam: V3, pitchDeg: number, yawDeg = 0, dist = 100): 
 /** world size (m) of `px` pixels (of the 1080 frame) at depth d for a VISIBLE fov */
 export const pxToM = (px: number, d: number, visFovDeg: number) =>
   (px * 2 * d * Math.tan((cameraFovForVisible(visFovDeg) * Math.PI) / 360)) / 1080;
+
+/** half-width (m) of the visible picture at view-axis depth d for a VISIBLE fov */
+export const halfWidthAt = (d: number, visFovDeg: number) => d * Math.tan((cameraFovForVisible(visFovDeg) * Math.PI) / 360) * (16 / 9);
+
+/**
+ * Font-independent lyric size: the largest em (<= em0) at which a block that is `w1` em wide
+ * (measureLyric(line, 1, undefined, {rows}).width) still fits in `room` metres after growing by `margin` (15 %: the
+ * final render's Futura may set wider than a preview machine's fallback font). Lines use explicit `rows`, so the size
+ * is the only thing that adapts to the font.
+ */
+export const fitEm = (em0: number, w1: number, room: number, margin = 0.15) => Math.min(em0, room / (w1 * (1 + margin)));

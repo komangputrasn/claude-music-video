@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import {SilStage, CameraRig} from '../../lib/SilStage';
 import {SilGuy} from '../../lib/SilCast';
 import {Iris} from '../../lib/Iris';
-import {WorldLyric} from '../../lib/WorldLyric';
+import {WorldLyric, measureLyric} from '../../lib/WorldLyric';
 import {S, GREYS, SFONTS, cameraFovForVisible} from '../../lib/palette';
 import {makeSilhouetteMaterial} from '../../lib/Silhouette';
 import {Backlight, FogLayers, LightPool, LightShaft} from '../../lib/atmos';
@@ -21,7 +21,6 @@ import {bassAt, clamp01, lerp} from '../../../lib/time';
 import {guyIdle, guySitOn, guyWalk, mergePose, mixPose, GuyPose} from '../../../lib/characters/Guy';
 import {Capsule, CAPSULE} from './Capsule';
 import {Highway} from './Highway';
-import {placeWords} from './lyric';
 import {TCUT, W} from './timing';
 
 const FOV = cameraFovForVisible(24);
@@ -32,7 +31,15 @@ const BOX_Y0 = 0.55; // lightbox bottom
 const PLINTH_TOP = 0.24; // the island plinth under the pillar (he stands on it at the socket)
 const CAR_X = 3.35;
 const CAR_Z = -24.4;
-const EM = 0.43;
+/** the lightbox rows: I STOPPED / TO GET GAS, / AND THE CAR / DROVE AWAY, */
+const ROWS = [[0, 1], [2, 3, 4], [5, 6, 7], [8, 9]];
+const ROW_PITCH = 1.24; // em
+/** letter size: 0.43 m, or smaller so the widest row (measured in the font actually installed) fills at most 80% of
+ *  the lightbox. Measured at runtime: the box width is fixed and the final render's Futura differs from the fallback. */
+const lightboxEm = () => {
+  const w1 = Math.max(...measureLyric(22, 1, undefined, {rows: ROWS, lineHeight: ROW_PITCH}).rowWidths);
+  return Math.min(0.43, (0.8 * PW) / w1);
+};
 const smooth = (x: number) => {
   const c = clamp01(x);
   return c * c * (3 - 2 * c);
@@ -61,9 +68,9 @@ const getBoxTex = () => {
   g.textAlign = 'center';
   (g as unknown as {letterSpacing: string}).letterSpacing = '6px';
   g.font = `600 30px ${SFONTS.futura}`;
-  g.fillText('FUEL · ON PLAN ONLY', 256, 70);
+  g.fillText('FUEL · ON PLAN ONLY', 256, 70, 432); // maxWidth: stays between the rules in any font
   g.font = `400 22px ${SFONTS.mono}`;
-  g.fillText('PILLAR 07 · LEASE 0315-77', 256, 1500);
+  g.fillText('PILLAR 07 · LEASE 0315-77', 256, 1500, 432);
   g.fillRect(40, 92, 432, 3);
   g.fillRect(40, 1460, 432, 3);
   boxTex = new THREE.CanvasTexture(c);
@@ -103,9 +110,11 @@ const FuelPillar: React.FC<{t: number; socket: number; bass: number}> = ({t, soc
 };
 
 /** the floodlight: a black cantilever arm off the pillar's crown with a hot white strip under it, over the apron */
-// the lamp hangs over the car's far (right) side: its cone must not stand between the camera and his path out of the
-// door to the socket (haze in front of a hero veils him grey)
-const LAMP: [number, number, number] = [CAR_X + 1.1, 6.05, PZ + 2.4];
+// the lamp hangs beyond the car's far (right) side: its cone must not stand between the camera and his path out of the
+// door to the socket, nor between the camera and his bust seated in the stopped pod (the camera looks down the car's
+// lane, x = CAR_X; the cone's back face drawn in front of a hero veils him grey). At x = CAR_X + 2.0 the cone (r 1.8 m
+// at the glass band's height) clears the bust (x = CAR_X ± 0.25) at every height of the glass.
+const LAMP: [number, number, number] = [CAR_X + 2.0, 6.05, PZ + 2.4];
 const FloodArm: React.FC = () => {
   const mats = useMemo(() => ({
     black: makeSilhouetteMaterial(S.void, null, true),
@@ -159,12 +168,7 @@ export const ShotPillar: React.FC<{t: number; abs: number}> = ({t, abs}) => {
   const pose = mixPose(sitP, walkP, out);
   // facing: −Z in the car; turn a little toward the pillar to reach; after "drove", turn toward the departing car
   const yaw = Math.PI + 0.35 * reach * out - 0.3 * step;
-  const textPerWord = useMemo(() => placeWords(22, EM, [
-    {words: [0, 1], x: 0, y: 0},
-    {words: [2, 3, 4], x: 0, y: -1.24 * EM},
-    {words: [5, 6, 7], x: 0, y: -2.48 * EM},
-    {words: [8, 9], x: 0, y: -3.72 * EM},
-  ]), []);
+  const em = useMemo(lightboxEm, []);
   const camZ = lerp(-7.6, -8.4, smooth(lt / 4.3));
   return (
     <SilStage fog={{color: GREYS.g3, near: 30, far: 260}} camera={{far: 2500}}>
@@ -181,10 +185,12 @@ export const ShotPillar: React.FC<{t: number; abs: number}> = ({t, abs}) => {
         intensity={0.9} softness={1.3} striation={0.55} dust={320} time={t} ground={0} groundFade={0.4} source={0.9} />
       <LightPool position={[LAMP[0], 0, LAMP[2]]} radius={2.4} intensity={0.7} haze={0} />
       <FuelPillar t={t} socket={reach} bass={bass} />
-      <WorldLyric line={22} time={t} mode="dark" size={EM} position={[0, 5.4, PZ + 0.03]} perWord={textPerWord}
-        until={TCUT.patent + 0.05} fog={false} />
+      <WorldLyric line={22} time={t} mode="dark" size={em} rows={ROWS} lineHeight={ROW_PITCH} anchor="baseline"
+        position={[0, 5.4, PZ + 0.03]} until={TCUT.patent + 0.05} fog={false} />
+      {/* the same low seat back + front glow as shot 2: from behind he is seen seated in the pod before he climbs out */}
       <Capsule time={t} position={[CAR_X, 0, carZ]} rotation-y={Math.PI} doorSide={1} door={door} seatGlow={1} iris={0.35 + 0.65 * irisK}
-        irisOpen={0.4 + 0.6 * irisK} headlights={1} cabinGlow={0.3} rim={{color: S.bone, strength: 0.6, power: 6, dir: [0, 1]}}>
+        irisOpen={0.4 + 0.6 * irisK} headlights={1} cabinGlow={0.3} frontGlow={1} seatBack={0.5}
+        rim={{color: S.bone, strength: 0.6, power: 6, dir: [0, 1]}}>
         {out < 0.02 ? <SilGuy position={CAPSULE.seatRoot} pose={sitP} /> : null}
       </Capsule>
       {out >= 0.02 ? <SilGuy position={pos} rotation-y={yaw} pose={pose} rim={{color: S.bone, strength: 0.5, power: 7, dir: [0, 1]}} /> : null}

@@ -19,7 +19,10 @@
  *
  * Frame: origin = base centre (the pillow rests on y = 0, e.g. a mattress top); long side along X (0.66 m), depth along Z
  * (0.46 m), 0.125 m tall at the crown; the iris lies ON the top surface (normal ≈ +Y tilted toward +Z), its "up" toward −Z.
- * For a pillow propped against a headboard rotate the group about X (e.g. rotation-x={-1.1} stands it up, iris toward +Z).
+ * For a pillow propped against a headboard rotate the group about X with a POSITIVE angle (three.js: +X rotation turns
+ * +Y toward +Z): rotation-x={1.1} stands it up, base toward −Z (the headboard), iris toward +Z (the eye then sits in the
+ * lower half — irisAt={0} centres it; Hold uses rotation-x={π/2 + tilt} with irisAt 0). A NEGATIVE angle turns the eye
+ * toward −Z, away from a camera at the foot of the bed (verified: at rotation-x −1.1 that camera sees only the underside).
  * PILLOW = {size, top, irisCenter, irisNormal, irisRadius}. The iris and glow are userData.silKeep (they keep glowing
  * inside a parent <Silhouette>). Near-silence (Hold 162–166 s): keep `talk` at 0 except for "Is that you?", nothing else moves.
  */

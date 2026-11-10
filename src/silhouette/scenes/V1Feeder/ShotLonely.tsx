@@ -21,7 +21,7 @@ import {guyIdle, mergePose} from '../../../lib/characters/Guy';
 import {pancakeLie} from '../../../lib/characters/Pancake';
 import {W, sm} from './timing';
 import {RowLyric, V3} from './parts';
-import {FEEDER, FEEDER_YAW} from './common';
+import {DOG_LIE, DOG_LIE_YAW, FEEDER, FEEDER_YAW} from './common';
 import {FEEDER_HIDE} from './ShotFeeder';
 
 // the camera sits toward the door side (+Z) so the line of sight to the man's back still lands on the lit left wall
@@ -29,9 +29,10 @@ import {FEEDER_HIDE} from './ShotFeeder';
 const CAM: V3 = [2.6, 0.2, 1.3];
 const TARGET: V3 = [-1.6, 0.95, 0.5];
 const FOV = 30;
-/** he lies beside the box, behind its front plane (near FEEDER's spot), and faces the man (+Z): profile to the camera */
-const DOG: V3 = [-1.2, 0, 1.0];
-const DOG_YAW = -0.3;
+/** he lies beside the box, behind its front plane, facing the man (+Z): profile to the camera. FEEDER ends with him turning
+ *  away from the box and lying down on exactly this spot and heading, so the cut keeps his screen direction (left). */
+const DOG: V3 = DOG_LIE;
+const DOG_YAW = DOG_LIE_YAW;
 /** the man stands near the door at the left edge of the frame, turned down toward the dog */
 const MAN: V3 = [-1.55, 0, 1.95];
 const MAN_YAW = Math.PI - 0.3;

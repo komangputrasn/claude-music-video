@@ -15,7 +15,7 @@ import {Megablock} from '../../lib/sets';
 import {bassAt, lerp} from '../../../lib/time';
 import {wordTime} from '../../../lib/lyrics';
 import {guyIdle} from '../../../lib/characters/Guy';
-import {ShotProps, prog, easeOut, flashAfter, rowsPerWord, RIM_BONE} from './common';
+import {ShotProps, prog, easeOut, flashAfter, RIM_BONE} from './common';
 
 export const SHOT_A = {t0: 57.75, t1: 61.56};
 export const FOG_A = {color: S.ash, near: 180, far: 1900};
@@ -27,6 +27,7 @@ const WORDGAP = 0.5;
 const VIS = 24; // visible (letterboxed) vertical fov
 const TAN = Math.tan((VIS * Math.PI) / 360);
 const ASPECT = 1920 / 804;
+const ROWS12 = [[0, 1, 2, 3], [4, 5, 6, 7, 8]];
 
 export const ShotBuyNow: React.FC<ShotProps> = ({t, f}) => {
   const u = prog(t, SHOT_A.t0, SHOT_A.t1);
@@ -46,7 +47,6 @@ export const ShotBuyNow: React.FC<ShotProps> = ({t, f}) => {
   const towerH = 2.4 * half;
   const crowdZ = LZ + D - 128;
   const em = metresForPx(62, D, cameraFovForVisible(VIS));
-  const rows = useMemo(() => rowsPerWord(12, em, [[0, 1, 2, 3], [4, 5, 6, 7, 8]]), [em]);
   const tags = useMemo(
     () =>
       mergeTagSets(
@@ -64,7 +64,7 @@ export const ShotBuyNow: React.FC<ShotProps> = ({t, f}) => {
       <Backlight position={[0, 0.7 * half, LZ - 200]} size={[3.5 * W, 2.2 * half]} shape="radial" softness={1} intensity={0.12} noise={0.25} time={t} />
       {/* the line, projected on the cloud deck above the sign (a faint lit patch of haze behind it) */}
       <Backlight position={[0, Yc + 0.6 * half, LZ + 12]} size={[0.75 * W, 0.4 * half]} shape="radial" softness={1} intensity={0.1} noise={0.35} time={t} />
-      <WorldLyric line={12} time={t} size={em} position={[0, Yc + 0.66 * half, LZ + 30]} until={SHOT_A.t1 + 0.05} perWord={rows} />
+      <WorldLyric line={12} time={t} size={em} rows={ROWS12} anchor="baseline" position={[0, Yc + 0.66 * half, LZ + 30]} until={SHOT_A.t1 + 0.05} />
       {/* BUY NOW: lit from the slam; each word flares when sung; on "for" the leases start running out */}
       <GiantLetters
         text="BUY NOW"

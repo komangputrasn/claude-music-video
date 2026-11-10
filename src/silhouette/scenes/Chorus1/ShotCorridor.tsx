@@ -25,6 +25,7 @@ const EM = 1.15; // inscription em (m)
 const GAP = 1.6; // text ↔ slot edge
 const ROW1 = 5.3; // baselines
 const ROW2 = 3.75;
+const EDGE = 13; // m: outer limit of the inscription (~84% of the visible half-width at the end of the push)
 
 /** word centre targets for the split inscription: [left block right-aligned | right block left-aligned] */
 const wordTargets = (size: number) => {
@@ -43,6 +44,14 @@ const wordTargets = (size: number) => {
   ];
 };
 
+/** the inscription em: EM, unless the widest half (measured with the real font) would reach past EDGE */
+const fitEm = () => {
+  const w = (s: string) => measureLyric(s, EM).width;
+  const sp = 0.42 * EM;
+  const widest = Math.max(w("I'M") + sp + w('DONE'), w('WITH'), w('UPGRADE') + sp + w('TO'), w('CONTINUE'));
+  return Math.min(EM, (EM * (EDGE - CW / 2 - GAP)) / widest);
+};
+
 export const ShotCorridor: React.FC<ShotProps> = ({t, f}) => {
   const u = prog(t, SHOT_C.t0, SHOT_C.t1);
   const e = easeOut(u);
@@ -53,7 +62,8 @@ export const ShotCorridor: React.FC<ShotProps> = ({t, f}) => {
   // far → near: gates 7..2 shut in rhythm with the words; the bays nearest him stay open and lit (his backdrop)
   const closeAt: Record<number, number> = {7: tUp, 6: tUp + 0.24, 5: tUp + 0.48, 4: tTo, 3: tCont, 2: tCont + 0.32};
   const gateClose = (i: number) => (closeAt[i] === undefined ? 0 : easeInOut(prog(t, closeAt[i], closeAt[i] + 0.3)));
-  const targets = useMemo(() => wordTargets(EM), []);
+  const em = useMemo(fitEm, []);
+  const targets = useMemo(() => wordTargets(em), [em]);
   return (
     <>
       <CameraRig position={[0, 3.9, lerp(31, 28, e)]} target={[0, 4.3, -100]} fov={cameraFovForVisible(26)} />
@@ -67,7 +77,7 @@ export const ShotCorridor: React.FC<ShotProps> = ({t, f}) => {
       <WorldLyric
         line={14}
         time={t}
-        size={EM}
+        size={em}
         position={[0, 0, 0.12]}
         until={SHOT_C.t1 + 0.05}
         perWord={(i, w) => ({offset: [targets[i].x - (w.x + w.width / 2), targets[i].y - w.y, 0]})}

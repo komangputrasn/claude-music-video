@@ -2,8 +2,9 @@
  * Shot 2 — GOVERNOR (scene-local 147–293, song 97.48–102.35). [21] "and the speed is a tier, so I crawled in first gear."
  * Dead-centre one-point perspective down the highway, from behind and above his capsule. Ahead, TENURE's speed governor
  * spans the road: a monumental black beam with a giant dial whose arc is almost all red — the plan stops the needle at
- * 20 ("SPEED · TIER 1"). It trembles against the stop, then sags on "crawled". His black pod (red iris on its tail,
- * the frost-white seat glowing through the glass) creeps up the centre lane while other capsules stream past on both
+ * 20 ("SPEED · TIER 1"). It trembles against the stop, then sags on "crawled". His black pod (red iris on its tail;
+ * through the rear glass his hooded head and shoulders stand black against the seat's cold light filling the front of
+ * the cabin, over a low glowing seat back) creeps up the centre lane while other capsules stream past on both
  * sides as long trails of white light, one on every beat, and vanish under the gantry toward the horizon.
  * The line is lit on the beam itself, either side of the dial: AND THE SPEED / IS A TIER, | SO I CRAWLED / IN FIRST GEAR.
  */
@@ -11,7 +12,7 @@ import React, {useLayoutEffect, useMemo} from 'react';
 import * as THREE from 'three';
 import {SilStage, CameraRig} from '../../lib/SilStage';
 import {SilGuy} from '../../lib/SilCast';
-import {WorldLyric} from '../../lib/WorldLyric';
+import {WorldLyric, measureLyric} from '../../lib/WorldLyric';
 import {S, GREYS, cameraFovForVisible} from '../../lib/palette';
 import {makeSilhouetteMaterial} from '../../lib/Silhouette';
 import {LaserLines} from '../../lib/sets';
@@ -21,7 +22,6 @@ import {guyShiver, guySitOn, mergePose, mixPose} from '../../../lib/characters/G
 import {Capsule, CAPSULE} from './Capsule';
 import {Highway} from './Highway';
 import {GovernorGantry} from './Governor';
-import {placeWords, rowWidth} from './lyric';
 import {TCUT, W} from './timing';
 
 const FOV = cameraFovForVisible(22);
@@ -32,6 +32,9 @@ const RADIUS = 5;
 const EM = 1.5;
 const STREAK_V = 48; // m/s
 const LANES = [3.6, -3.6, 7.2, -7.2, -3.6, 7.2, 3.6, -7.2];
+/** word rows of line 21, left and right of the dial */
+const ROWS_L = [[0, 1, 2], [3, 4, 5]];
+const ROWS_R = [[6, 7, 8], [9, 10, 11]];
 const smooth = (x: number) => {
   const c = clamp01(x);
   return c * c * (3 - 2 * c);
@@ -96,18 +99,11 @@ export const ShotGovernor: React.FC<{t: number; abs: number}> = ({t, abs}) => {
     mergePose(guyShiver(t), guySitOn(CAPSULE.seatH)),
     0.6,
   );
-  // the line, lit on the beam either side of the dial
+  // the line, lit on the beam either side of the dial; the beam is sized from the measured rows (any font)
   const lay = useMemo(() => {
-    const rows = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]];
-    const bw = Math.max(...rows.map((r) => rowWidth(21, r, EM)));
+    const bw = Math.max(...measureLyric(21, EM, undefined, {rows: [...ROWS_L, ...ROWS_R]}).rowWidths);
     const xc = RADIUS * 1.12 + 1.1 + bw / 2;
-    const y0 = 0.24 * EM;
-    const y1 = y0 - 1.18 * EM;
-    const perWord = placeWords(21, EM, [
-      {words: rows[0], x: -xc, y: y0}, {words: rows[1], x: -xc, y: y1},
-      {words: rows[2], x: xc, y: y0}, {words: rows[3], x: xc, y: y1},
-    ]);
-    return {perWord, beamW: 2 * (xc + bw / 2 + 1.3)};
+    return {xc, beamW: 2 * (xc + bw / 2 + 1.3)};
   }, []);
   return (
     <SilStage fog={{color: GREYS.g3, near: 60, far: 750}} camera={{far: 2500}}>
@@ -116,12 +112,17 @@ export const ShotGovernor: React.FC<{t: number; abs: number}> = ({t, abs}) => {
         sky={0.09} wet={{reflectivity: 0.8, puddles: 0.18, streak: 2.0}} />
       <GovernorGantry time={t} position={[0, DIAL_Y, GANTRY_Z]} speed={speed} limit={20} redPulse={bass} beamW={lay.beamW}
         radius={RADIUS} height={DIAL_Y}>
-        <WorldLyric line={21} time={t} mode="screen" size={EM} position={[0, 0, 0.06]} perWord={lay.perWord}
-          until={TCUT.pillar + 0.05} intensity={1.0} halo={0.18} />
+        {/* row 0's baseline 0.24 em above the dial centre: AND THE SPEED / IS A TIER, | SO I CRAWLED / IN FIRST GEAR. */}
+        {([[-lay.xc, ROWS_L], [lay.xc, ROWS_R]] as const).map(([x, rows]) => (
+          <WorldLyric key={x} line={21} time={t} mode="screen" size={EM} rows={rows} anchor="baseline"
+            position={[x, 0.24 * EM, 0.06]} until={TCUT.pillar + 0.05} intensity={1.0} halo={0.18} />
+        ))}
       </GovernorGantry>
       <Streaks t={t} camZ={camZ} />
+      {/* seen from behind: a low seat back (no headrest) and the cold light caught in the front of the cabin, so his
+          hooded head and shoulders stand black in the pod instead of hiding behind the glowing seat back */}
       <Capsule time={t} position={[0, 0, zCar]} rotation-y={Math.PI} seatGlow={1} iris={0.9 + 0.1 * bass} headlights={1}
-        cabinGlow={0.3} rim={{color: S.bone, strength: 0.6, power: 6, dir: [0, 1]}}>
+        cabinGlow={0.3} frontGlow={1} seatBack={0.5} rim={{color: S.bone, strength: 0.6, power: 6, dir: [0, 1]}}>
         <SilGuy position={CAPSULE.seatRoot} pose={pose} />
       </Capsule>
     </SilStage>

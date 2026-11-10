@@ -1,5 +1,5 @@
 // V1Feeder local parts (no lib changes):
-//   readerMatrix()  world matrix of the e-reader held in 'read' mode (same grip as the lib's <HeldSilEReader>)
+//   readerMatrix()  world matrix of the e-reader held in 'read' mode (the lib's HELD_SILEREADER grip, + an optional turn)
 //   rollToUp()      CameraRig roll that turns a world direction (the page's text-up) to screen-up
 //   <InsertReader>  the e-reader for the close insert: pale page with "1984 · GEORGE ORWELL" and the sung line printed on it
 //   <RowLyric>      a <WorldLyric> with explicit rows and a per-word fx that gets the word's row slot (rising rows)
@@ -10,6 +10,7 @@ import {WorldLyric, WorldLyricProps, WordFx, WordInfo, measureLyric} from '../..
 import {LINES} from '../../../lib/lyrics';
 import {guyJointMatrix, GuyPose} from '../../../lib/characters/Guy';
 import {rbox} from '../../../lib/props/Padlock';
+import {HELD_SILEREADER} from '../../lib/props';
 
 export type V3 = [number, number, number];
 export const lerp3 = (a: V3, b: V3, k: number): V3 => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
@@ -17,21 +18,22 @@ export const lerp3 = (a: V3, b: V3, k: number): V3 => [a[0] + (b[0] - a[0]) * k,
 // ------------------------------------------------------------------------------------------------ e-reader geometry
 // Same numbers as src/silhouette/lib/props/SilEReader.tsx (device 0.122 × 0.172 × 0.0095, screen 0.09 × 0.12 at y 0.013)
 export const RD = {w: 0.122, h: 0.172, d: 0.0095, sw: 0.09, sh: 0.12, sy: 0.013} as const;
-/** <HeldSilEReader mode='read'> grip transform (copied: the lib does not export it) */
-const basisEuler = (x: V3, y: V3, z: V3): V3 => {
-  const m = new THREE.Matrix4().makeBasis(new THREE.Vector3(...x), new THREE.Vector3(...y), new THREE.Vector3(...z));
-  const e = new THREE.Euler().setFromRotationMatrix(m);
-  return [e.x, e.y, e.z];
-};
-export const READ_POS: V3 = [-0.07, -0.012, 0.012];
-export const READ_ROT: V3 = basisEuler([0, 1, 0], [-1, 0, 0], [0, 0, 1]);
+/** <HeldSilEReader mode='read'> grip transform (the lib's) */
+export const READ_POS = HELD_SILEREADER.read.position;
+export const READ_ROT = HELD_SILEREADER.read.rotation;
 
-/** World matrix of the e-reader device centre for a Guy at `pos` / `rotY` holding it in 'read' mode in his right hand. */
-export const readerMatrix = (pose: GuyPose, pos: V3, rotY: number) => {
-  const g = new THREE.Matrix4().compose(new THREE.Vector3(...pos), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY), new THREE.Vector3(1, 1, 1));
-  const grip = guyJointMatrix(pose, 'gripR', {R: true});
+/** Grip-frame matrix of the right fist for a Guy at `pos` / `rotY` (world). */
+export const gripMatrix = (pose: GuyPose, pos: V3, rotY: number) =>
+  new THREE.Matrix4().compose(new THREE.Vector3(...pos), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY), new THREE.Vector3(1, 1, 1))
+    .multiply(guyJointMatrix(pose, 'gripR', {R: true}));
+/** World matrix of the e-reader device centre for a Guy at `pos` / `rotY` holding it in 'read' mode in his right hand.
+ *  `turn` = an extra rotation of the device in his fist (grip frame, about the fist), as a `<group quaternion>` around the
+ *  `<HeldSilEReader>` applies it. */
+export const readerMatrix = (pose: GuyPose, pos: V3, rotY: number, turn?: THREE.Quaternion) => {
+  const g = gripMatrix(pose, pos, rotY);
+  if (turn) g.multiply(new THREE.Matrix4().makeRotationFromQuaternion(turn));
   const held = new THREE.Matrix4().compose(new THREE.Vector3(...READ_POS), new THREE.Quaternion().setFromEuler(new THREE.Euler(...READ_ROT)), new THREE.Vector3(1, 1, 1));
-  return g.multiply(grip).multiply(held);
+  return g.multiply(held);
 };
 /** page centre, normal and text-up direction (world) of a reader matrix */
 export const readerPage = (m: THREE.Matrix4) => {
@@ -52,20 +54,25 @@ export const rollToUp = (pos: V3, target: V3, dir: V3) => {
 
 // ------------------------------------------------------------------------------------------------ InsertReader
 const CW = 512, CH = 683;
-/** body block of the page (device-local): top-left corner and width, from the header layout above */
+/** The page's license line sits under the sung text, on the LEFT and above his fist (in the insert the fist covers the
+ *  bottom-right ~45 % × 24 % of the page: canvas y ≳ 520 right of x ≈ 300). Canvas px. */
+const LICENSE = {ruleY: 474, baseY: 504};
+/** body block of the page (device-local): top-left corner and width, from the header layout above; it ends 14 canvas px
+ *  above the license rule, so the sung line can never run into it (whatever the font's metrics) */
 export const PAGE_BODY = {
   x0: -RD.sw / 2 + (44 / CW) * RD.sw,
   yTop: RD.sy + RD.sh / 2 - (206 / CH) * RD.sh,
   width: RD.sw * (1 - 88 / CW),
-  height: RD.sh * ((620 - 206) / CH),
+  height: RD.sh * ((LICENSE.ruleY - 14 - 206) / CH),
 };
 
-/** fit a lyric line into the page body: the largest em size (m) whose balanced wrap fits the block */
+/** fit a lyric line into the page body: the largest em size (m) whose balanced wrap fits the block (cap top to last
+ *  baseline; the line is uppercase, so nothing hangs below it) */
 export const fitPageLyric = (line: number) => {
   let s = 0.0125;
   for (; s > 0.004; s -= 0.0002) {
     const m = measureLyric(line, s, PAGE_BODY.width);
-    if (m.width <= PAGE_BODY.width && m.height <= PAGE_BODY.height * 0.92 && m.rows <= 4) break;
+    if (m.width <= PAGE_BODY.width && m.height <= PAGE_BODY.height && m.rows <= 4) break;
   }
   return s;
 };
@@ -127,13 +134,20 @@ function buildHeader() {
   ls(6);
   g.fillText('GEORGE ORWELL', CW / 2 + 3, 146);
   g.fillRect(CW * 0.38, 170, CW * 0.24, 2);
-  g.globalAlpha = 0.55;
-  g.font = `15px ${SFONTS.mono}`;
-  ls(2);
+  // the license line: left-aligned under the text, above his fist (≈ 350 of the 424 px body width in a 0.6 em mono,
+  // so it keeps a >= 15 % margin with either font; bold so Courier's hairline strokes still read in the fallback)
   g.textAlign = 'left';
-  g.fillText('LOC 12 / 4212', 40, 654);
-  g.textAlign = 'right';
-  g.fillText('LICENSED · NOT OWNED', CW - 40, 654);
+  g.globalAlpha = 0.5;
+  g.fillRect(44, LICENSE.ruleY, CW - 88, 1.5);
+  g.globalAlpha = 1;
+  g.font = `bold 24px ${SFONTS.mono}`;
+  ls(3);
+  g.fillText('LICENSED · NOT OWNED', 44, LICENSE.baseY);
+  // the location stays bottom-left (left of his fist)
+  g.globalAlpha = 0.75;
+  g.font = `bold 17px ${SFONTS.mono}`;
+  ls(2);
+  g.fillText('LOC 12 / 4212', 44, 654);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;

@@ -43,8 +43,11 @@ void main() {
   // sky gradient: dim warm top → mid → bright gold band at the horizon
   vec3 col = mix(uTop, uMid, exp(-yy / uMidH));
   col = mix(col, uBand, exp(-yy / uBandH));
-  // sun glow (wide, soft) + a horizontal flare along the horizon
-  vec2 d = vP - uSun;
+  // sun glow (wide, soft) + a horizontal flare along the horizon. The sun is placed for the camera that is drawing:
+  // the card is ~2 km away, so from the WetGround mirror camera (eye mirrored to -eye) a sun placed for the main eye
+  // reflected ~2·eye/distance too low (crane at 84 m: ~5° below the horizon, a second small pale sun in the city gap).
+  // In the main pass cameraPosition.y == uHorizon (shots pass eye = camera height), so the offset is exactly 0.
+  vec2 d = vP - vec2(uSun.x, uSun.y + (cameraPosition.y - uHorizon));
   float r = length(d);
   col += uGlowCol * exp(-r / uGlowR);
   col += uGlowCol * 0.55 * exp(-abs(y) / (uBandH * 0.9)) * exp(-abs(d.x) / (uGlowR * 5.0));
@@ -58,7 +61,8 @@ void main() {
     float fk = float(k);
     float yc = uBandH * (0.6 + 1.25 * fk + 0.25 * sin(fk * 3.1));
     float th = uBandH * (0.10 + 0.07 * fk);
-    float band = exp(-pow((y - yc) / th, 2.0));
+    float q = (y - yc) / th; // signed: square it as q * q (pow() of a negative base is NaN under ANGLE/D3D11, Metal)
+    float band = exp(-q * q);
     float n = vn(vec2(sx * (1.5 + fk) + uTime * 0.02 * (1.0 + fk), fk * 7.3));
     st += band * smoothstep(0.35, 0.8, n);
   }

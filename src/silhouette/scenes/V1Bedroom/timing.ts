@@ -58,6 +58,17 @@ export const lin = (t: number, a: number, b: number) => clamp01((t - a) / (b - a
 export const sm = (t: number, a: number, b: number) => smooth((t - a) / (b - a));
 
 /**
+ * The printer's error light from "print" (24.56 s) on: a calm swell on the half bar (2 beats ≈ 1.07 s, ~0.94 Hz,
+ * smooth cosine; the brief forbids strobe, so never CellRoom's hard 3.2 Hz printerError blink). 0 before the error,
+ * else 0.35..1 (1 on "print" and on every 2-beat crest). Drive printerGlow and <PrinterDot> with it.
+ */
+export const errPulse = (t: number) => {
+  if (t < W.print) return 0;
+  const ph = (t - W.print) / (2 * BEAT_LEN);
+  return 0.35 + 0.65 * (0.5 + 0.5 * Math.cos(2 * Math.PI * ph));
+};
+
+/**
  * The TENURE scanner: one red pass through the slats every half bar (2 beats), ping-pong, eased so it dwells at the
  * window edges and crosses fast — the rhythm of the cell comes from this light, not from cuts.
  * Returns the cookie's `scan` (0..1 across the window, slightly overshooting so the band leaves the glass) or null.

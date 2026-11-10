@@ -20,11 +20,17 @@ import {TCUT, T_START} from './timing';
 
 type V3 = [number, number, number];
 
-// the end screen: face centre, size (m)
+// the end screen: face z, width, top and bottom edge (m). Its face runs down to a low kerb (SCR_BOTTOM): with the old
+// 2.5 m plinth, plinth + reflection made a black band at the horizon and the walker's torso (≈ 0.8–1.4 m at ~36 m)
+// vanished into it, black on black. Now his whole figure stands on the bone face and its reflection.
 const SCR_Z = -150;
 const SCR_W = 66;
-const SCR_H = 24;
-const SCR_Y = 2.5 + SCR_H / 2;
+const SCR_TOP = 26.5;
+const SCR_BOTTOM = 0.3;
+const SCR_H = SCR_TOP - SCR_BOTTOM;
+const SCR_Y = (SCR_TOP + SCR_BOTTOM) / 2;
+// the screen's iris: right above him (fixed height, independent of the face size)
+const IRIS_Y = 8.7;
 
 const Block: React.FC<{size: V3; position: V3; color?: string}> = ({size, position, color = S.void}) => (
   <mesh position={position}>
@@ -46,12 +52,12 @@ export const ShotStreet: React.FC<{t: number; abs: number}> = ({t, abs}) => {
       <WetGround size={[240, 420]} position={[0, 0, -150]} puddles={0.6} ripple={0.45} streak={1} time={t} color={GREYS.g1} />
 
       {/* the end screen: a black mount, the bone face (rain-streaked), the haze it lights */}
-      <Block size={[SCR_W + 3, SCR_H + 5, 4]} position={[0, SCR_Y, SCR_Z - 2.3]} />
-      <Block size={[SCR_W + 3, 2.6, 4]} position={[0, 1.3, SCR_Z - 2.3]} color={GREYS.g1} />
+      <Block size={[SCR_W + 3, SCR_TOP + 2.5, 4]} position={[0, (SCR_TOP + 2.5) / 2, SCR_Z - 2.3]} />
+      <Block size={[SCR_W + 3, SCR_BOTTOM, 4]} position={[0, SCR_BOTTOM / 2, SCR_Z - 2.3]} color={GREYS.g1} />
       <Backlight position={[0, SCR_Y, SCR_Z - 0.2]} size={[SCR_W, SCR_H]} shape="slab" softness={0.035} noise={0.12}
         intensity={0.96 + 0.08 * bass} time={t} />
-      <Backlight position={[0, SCR_Y + 2, SCR_Z - 6]} size={[SCR_W * 2.2, SCR_H * 2.4]} shape="radial" softness={1} intensity={0.22} time={t} />
-      <Iris position={[0, SCR_Y - SCR_H / 2 + 6.2, SCR_Z + 0.05]} radius={2.2} time={t} intensity={1.4} pupil={0.3 + 0.05 * bass} />
+      <Backlight position={[0, 16.5, SCR_Z - 6]} size={[SCR_W * 2.2, 57.6]} shape="radial" softness={1} intensity={0.22} time={t} />
+      <Iris position={[0, IRIS_Y, SCR_Z + 0.05]} radius={2.2} time={t} intensity={1.4} pupil={0.3 + 0.05 * bass} />
       {/* the lyric: black letters standing on the screen */}
       {/* (explicit rows: 3 rows that stay clear of the iris and between the banners) */}
       {/* line 23: only its tail "WAY." (sung 110.00–110.40) — V2Car's patent claim already showed "FORD FILED A PATENT
@@ -59,9 +65,9 @@ export const ShotStreet: React.FC<{t: number; abs: number}> = ({t, abs}) => {
           at 110.40 exactly when line 24's "I" takes the same top-centre slot. Mode "screen", colour void (black letters
           on the bone screen), as for the rest of the screen's text. */}
       <LyricBlock line={23} time={t} rows={[[8]]} align="center" anchor="top" mode="screen"
-        color={S.void} fog={false} size={3.3} position={[0, SCR_Y + SCR_H / 2 - 3.2, SCR_Z + 0.15]} renderOrder={5} />
+        color={S.void} fog={false} size={3.3} position={[0, SCR_TOP - 3.2, SCR_Z + 0.15]} renderOrder={5} />
       <LyricBlock line={24} time={t} rows={[[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10]]} align="center" anchor="top" mode="dark"
-        fog={false} size={3.3} position={[0, SCR_Y + SCR_H / 2 - 3.2, SCR_Z + 0.15]} renderOrder={5} />
+        fog={false} size={3.3} position={[0, SCR_TOP - 3.2, SCR_Z + 0.15]} renderOrder={5} />
 
       {/* flanking blocks (fronts face the axis) and two TENURE banners with the red iris */}
       {[-1, 1].map((s) => (

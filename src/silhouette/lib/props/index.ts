@@ -11,7 +11,7 @@ export {PlainBowl, PLAINBOWL} from './PlainBowl';
 export type {PlainBowlProps} from './PlainBowl';
 export {SilPhone, HeldSilPhone, SILPHONE, SILPHONE_DEFAULT_LINES} from './SilPhone';
 export type {SilPhoneProps, HeldSilPhoneProps} from './SilPhone';
-export {SilEReader, HeldSilEReader, SILEREADER, SILEREADER_TEXT} from './SilEReader';
+export {SilEReader, HeldSilEReader, SILEREADER, SILEREADER_TEXT, HELD_SILEREADER, heldSilEReaderMatrix} from './SilEReader';
 export type {SilEReaderProps, HeldSilEReaderProps} from './SilEReader';
 export {KibbleSparks, KIBBLE_SPARKS} from './KibbleSparks';
 export type {KibbleSparksProps} from './KibbleSparks';

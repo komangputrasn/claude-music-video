@@ -3,8 +3,9 @@
 // black lecterns (the faceless judges) stands on a floor inlaid with a circle of light. In the centre, on a slender black
 // plinth just higher than he can reach, one red button — "Click to Cancel". He walks up to it, back to us, hammer in his
 // right hand, and reaches up for it. The line is the court's inscription, carved in light into the frieze over the
-// portal. On "and a court" the lecterns' red eyes open one by one and a colossal gavel lowers out of the dark; on "said"
-// it slams down onto the button and every light in the hall dies. Only the inscription is left burning: "…SAID NO,".
+// portal in two columns either side of the court's seal (the gavel's axis stays clear of words). On "and a court" the
+// lecterns' red eyes open one by one and a colossal gavel lowers out of the dark down that axis; on "said" it slams
+// down onto the button and every light in the hall dies. Only the inscription is left burning: "…SAID NO,".
 import React, {useLayoutEffect, useMemo} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -13,19 +14,21 @@ import {CameraRig} from '../../lib/SilStage';
 import {SilGuy} from '../../lib/SilCast';
 import {Silhouette} from '../../lib/Silhouette';
 import {Iris} from '../../lib/Iris';
-import {WorldLyric} from '../../lib/WorldLyric';
+import {WorldLyric, measureLyric} from '../../lib/WorldLyric';
 import {Backlight, FogLayers, LightPool, WetGround} from '../../lib/atmos';
 import {HeldSilHammer, GlowBillboard} from '../../lib/props';
 import {concreteMat, wboxMinMax, mergeBoxes} from '../../lib/sets';
 import {bassAt} from '../../../lib/time';
 import {guyWalk, guyIdle, mixPose, mergePose} from '../../../lib/characters/Guy';
-import {ShotProps, VoidFloor, Instances, prog, easeInOut, easeOut, easeIn, smooth, mix, mixV, pulseAfter, rowsPerWord, V3} from './common';
+import {ShotProps, VoidFloor, Instances, prog, easeInOut, easeOut, easeIn, smooth, mix, mixV, pulseAfter, V3} from './common';
 import {T, L, SHOTS} from './timing';
 
 export const FOG_A = {color: GREYS.g2, near: 30, far: 260};
 
 const WALL_Z = -26; // front face of the far wall
 const PORTAL = {w: 36, h: 9.4};
+/** the frieze beam's half-width: wider than the portal so the split inscription keeps a wide margin on the stone */
+const FRIEZE_HW = PORTAL.w / 2 + 5;
 const RING = {r: 12.5, cz: -2.5, angles: [14, 31, 48, 65]}; // lectern ring (degrees, mirrored)
 const PLINTH = {w: 0.6, h: 1.68, d: 0.6, cap: 0.92};
 const BUTTON_Y = PLINTH.h + 0.08; // top of the cap = base of the dome
@@ -46,7 +49,7 @@ const HallWall: React.FC = () => {
       wboxMinMax([ow, 0, -th], [W, H, 0]),
       wboxMinMax([-ow, PORTAL.h, -th], [ow, H, 0]),
       // the frieze beam stands proud of the wall
-      wboxMinMax([-ow - 2.2, PORTAL.h + 0.3, 0], [ow + 2.2, PORTAL.h + 6.2, 0.6]),
+      wboxMinMax([-FRIEZE_HW, PORTAL.h + 0.3, 0], [FRIEZE_HW, PORTAL.h + 6.2, 0.6]),
       // portal jambs (deep reveal)
       wboxMinMax([-ow - 1.4, 0, 0], [-ow, PORTAL.h + 0.3, 0.6]),
       wboxMinMax([ow, 0, 0], [ow + 1.4, PORTAL.h + 0.3, 0.6]),
@@ -146,9 +149,10 @@ const ButtonPlinth: React.FC<{lit: number; pulse: number; crushed: number}> = ({
     domeMat.dispose();
     black.dispose();
   }, [domeMat, black]);
-  const k = lit * (1.15 + 0.35 * pulse);
+  // capped at 1: brighter authRed tone-maps toward orange (ACES), so the throb lives mostly in the glow
+  const k = lit * (0.82 + 0.18 * pulse);
   useLayoutEffect(() => {
-    domeMat.color.set(S.authRed).multiplyScalar(Math.max(0.07, Math.min(1.6, k)));
+    domeMat.color.set(S.authRed).multiplyScalar(Math.max(0.07, Math.min(1, k)));
   });
   const squash = 1 - 0.85 * crushed;
   return (
@@ -167,7 +171,7 @@ const ButtonPlinth: React.FC<{lit: number; pulse: number; crushed: number}> = ({
         <sphereGeometry args={[0.3, 40, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
       </mesh>
       {lit > 0.01 ? (
-        <GlowBillboard color={S.authRed} intensity={0.6 * lit * (1 + 0.5 * pulse) * (1 - crushed)} size={1.6} falloff={2.4} position={[0, BUTTON_Y + 0.1, -0.35]} />
+        <GlowBillboard color={S.authRed} intensity={0.42 * lit * (1 + 0.6 * pulse) * (1 - crushed)} size={1.4} falloff={2.6} position={[0, BUTTON_Y + 0.1, -0.35]} />
       ) : null}
     </group>
   );
@@ -227,9 +231,20 @@ const gavelAt = (t: number): {pos: V3; tilt: number} => {
 };
 
 // ------------------------------------------------------------------------------------------------ the shot
-const LYRIC_EM = 1.55;
-const ROWS = rowsPerWord(L.court, LYRIC_EM, [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]);
+// The gavel lowers straight down the axis in front of the frieze, so the inscription is split around that axis: two
+// columns either side of the court's seal, read row by row: THEY PASSED · CLICK TO CANCEL, / AND A COURT · SAID NO,.
+// The clear gap is wider than the gavel's head projected onto the frieze (head ±1.68 m at z 0, seen from the camera's
+// ~33 m → ±3.0 m at the wall), so no word is covered at any point of its descent.
 const FRIEZE_Y = PORTAL.h + 3.98; // baseline of row 0 (row 1 is 1.83 m lower)
+const FRIEZE_GAP = 3.8; // half-width of the clear axis between the columns (m)
+const FRIEZE_LEFT = [[0, 1], [5, 6, 7]]; // right-aligned to −FRIEZE_GAP
+const FRIEZE_RIGHT = [[2, 3, 4], [8, 9]]; // left-aligned to +FRIEZE_GAP
+const SEAL_Y = PORTAL.h + 3.275; // the seal sits midway between the incised rules
+/** em: 1.55 m (cap ≈ 31–36 px), shrunk only if the installed font's widest column would leave < 15 % of the beam */
+const LYRIC_EM = (() => {
+  const col = Math.max(...[FRIEZE_LEFT, FRIEZE_RIGHT].flatMap((rows) => measureLyric(L.court, 1, undefined, {rows}).rowWidths));
+  return Math.min(1.55, (0.85 * FRIEZE_HW - FRIEZE_GAP) / col);
+})();
 
 export const ShotCourt: React.FC<ShotProps> = ({t, f}) => {
   const dark = t >= T.strike;
@@ -266,17 +281,18 @@ export const ShotCourt: React.FC<ShotProps> = ({t, f}) => {
   const crushed = prog(t, T.contact - 0.035, T.contact);
 
   // the frieze: after the blow the earlier words dim, the verdict "SAID NO," stays burning
-  const perWord = (i: number, info: Parameters<typeof ROWS>[1]) => {
-    const fx = ROWS(i, info);
-    return dark && i < 8 ? {...fx, opacity: 0.42} : fx;
-  };
+  const perWord = (i: number) => (dark && i < 8 ? {opacity: 0.42} : {});
 
   const portalI = 0.7 + 0.1 * bass;
   return (
     <>
       <CameraRig position={cam} target={target} fov={cameraFovForVisible(24)} />
-      {/* the inscription: carved in light into the frieze over the portal */}
-      <WorldLyric line={L.court} time={t} mode="light" size={LYRIC_EM} intensity={1.15} halo={0.3} position={[0, FRIEZE_Y, WALL_Z + 0.62]} perWord={perWord} />
+      {/* the inscription: carved in light into the frieze over the portal, two columns either side of the gavel's axis;
+          CANCEL in solid red (additive red on the lit stone tone-maps coral) */}
+      <WorldLyric line={L.court} time={t} mode="light" size={LYRIC_EM} intensity={1.15} halo={0.3} redFill={1} rows={FRIEZE_LEFT} align="right"
+        anchor="baseline" position={[-FRIEZE_GAP, FRIEZE_Y, WALL_Z + 0.62]} perWord={perWord} />
+      <WorldLyric line={L.court} time={t} mode="light" size={LYRIC_EM} intensity={1.15} halo={0.3} redFill={1} rows={FRIEZE_RIGHT} align="left"
+        anchor="baseline" position={[FRIEZE_GAP, FRIEZE_Y, WALL_Z + 0.62]} perWord={perWord} />
       {dark ? (
         <>
           <WetGround size={[150, 150]} position={[0, 0, -16]} reflectivity={0.9} puddles={0.9} streak={0.5} color={GREYS.g1} time={t} />
@@ -290,7 +306,14 @@ export const ShotCourt: React.FC<ShotProps> = ({t, f}) => {
           {/* incised rules framing the inscription */}
           {[PORTAL.h + 0.95, PORTAL.h + 5.6].map((y) => (
             <mesh key={y} position={[0, y, WALL_Z + 0.61]}>
-              <planeGeometry args={[PORTAL.w + 2.5, 0.07]} />
+              <planeGeometry args={[2 * FRIEZE_HW - 1.9, 0.07]} />
+              <meshBasicMaterial color={S.bone} transparent opacity={0.2} depthWrite={false} blending={THREE.AdditiveBlending} />
+            </mesh>
+          ))}
+          {/* the court's seal on the axis, in the gap between the inscription's columns (the gavel passes over it) */}
+          {[1.95, 1.7].map((r) => (
+            <mesh key={r} position={[0, SEAL_Y, WALL_Z + 0.61]}>
+              <ringGeometry args={[r - 0.035, r + 0.035, 120]} />
               <meshBasicMaterial color={S.bone} transparent opacity={0.2} depthWrite={false} blending={THREE.AdditiveBlending} />
             </mesh>
           ))}

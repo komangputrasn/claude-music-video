@@ -53,6 +53,11 @@ export const ShotStand: React.FC<{t: number; abs: number}> = ({t, abs}) => {
   // between him and the door/slit midpoint (z 0.125), so the wall still reads symmetrical
   const manZ = 0.36;
   const z0 = 0.24;
+  // set cheat: the 0.6 m box is wider than his legs (0.42 m at his depth), and once the phone hand leaves his hip its
+  // right wall + brow corner stood beside his leg like a post. Drawn 0.6× as wide and 8 cm toward the door, all of the
+  // box sits behind his legs (≈10 px margin each side at 1080p); only its gold shows between them. Its halo, cones,
+  // floor wedge and kibble heap stay at the real box (see BoxCheat). Moving him instead put his leg over Pancake's head
+  const BOX_CHEAT = {width: 0.6, shift: 0.08};
   const cam: V3 = [lerp(10.8, 9.6, u), 1.45, z0];
   const tgt: V3 = [-0.6, 1.12, z0];
 
@@ -97,7 +102,7 @@ export const ShotStand: React.FC<{t: number; abs: number}> = ({t, abs}) => {
         windowLight={{intensity: 0.32, dir: [0, -0.4, -1]}} slit={0.26} doorLeak={0.3} vent={0.3}
         doorIris={{intensity: 1.2 * doorEye, open: 0.25 + 0.75 * doorEye, flicker: s01(t, W.plan - 0.2, W.plan + 0.3) * 0.8}} ambient={0.05}>
         {/* front={0}: the forward light cone would veil him and the dog gold (haze between the lens and the heroes) */}
-        <BrokenBox t={t} abs={abs} front={0} />
+        <BrokenBox t={t} abs={abs} front={0} cheat={BOX_CHEAT} />
         <SilPancake pose={{...pancakeEat(t, 2), tailWagAmount: 1}} position={dogPos} rotation-y={0}
           rim={{color: S.dawnGold, strength: 0.4, power: 6, dir: [0, 1]}} />
         <SilGuy position={[0.98, 0, manZ]} rotation-y={Math.PI / 2} pose={pose}

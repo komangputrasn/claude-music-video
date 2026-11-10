@@ -17,3 +17,8 @@ export const readPose = (t: number): GuyPose => {
 /** the feeder (props Monolith) at the cell's feeder spot, its face toward +X */
 export const FEEDER: V3 = CELL_SPOTS.feeder;
 export const FEEDER_YAW = CELL_SPOTS.feederRotY;
+
+/** where Pancake lies across the FEEDER → LONELY cut: beside the box, behind its front plane, turned away from it toward the
+ *  man (+Z, screen left in both shots). FEEDER ends with him turning around and lying down here; LONELY opens on it. */
+export const DOG_LIE: V3 = [-1.2, 0, 1.0];
+export const DOG_LIE_YAW = -0.3;

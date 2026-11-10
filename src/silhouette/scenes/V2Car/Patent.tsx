@@ -19,12 +19,32 @@ type GroupProps = Omit<React.ComponentProps<'group'>, 'children'>;
 export const SHEET = {
   w: 60,
   h: 24,
-  /** claim band: baselines (sheet-local y, m) of the two lyric rows and the em size */
-  claim: {em: 2.3, row0: 4.6, row1: 4.6 - 1.18 * 2.3, x: 3},
+  /** claim band: row 0's baseline (sheet-local y, m), the nominal em size, the rows' preferred left edge and the
+   *  right limit (the inner margin) of the lyric rows */
+  claim: {em: 2.3, row0: 4.6, x0: -22, xMax: 60 / 2 - 1.8},
 };
 
 const PPM = 68; // canvas px per metre
 const ls = (g: CanvasRenderingContext2D, px: number) => ((g as unknown as {letterSpacing: string}).letterSpacing = `${px}px`);
+/** canvas font for mono sheet type of cap height `cap` (m) */
+const monoFont = (cap: number, weight = 400) => `${weight} ${(cap / 0.72) * PPM}px ${SFONTS.mono}`;
+/** the claim band's small labels at the left margin (text, sheet-local baseline y, cap height) */
+const CLAIM_LABELS: [string, number, number][] = [
+  ['CLAIM 1.', SHEET.claim.row0, 0.55],
+  ['WHAT IS CLAIMED IS:', SHEET.claim.row0 - 0.85, 0.42],
+];
+const LABEL_X = -SHEET.w / 2 + 1.8;
+/** right edge (sheet m) of the claim labels, measured in the installed mono font: the lyric rows start right of it */
+export const claimLabelRight = () => {
+  const g = document.createElement('canvas').getContext('2d')!;
+  let r = LABEL_X;
+  for (const [s, , cap] of CLAIM_LABELS) {
+    g.font = monoFont(cap);
+    ls(g, 0.12 * (cap / 0.72) * PPM);
+    r = Math.max(r, LABEL_X + g.measureText(s).width / PPM);
+  }
+  return r;
+};
 
 const drawSheet = () => {
   const Wc = Math.round(SHEET.w * PPM);
@@ -52,13 +72,15 @@ const drawSheet = () => {
     g.stroke();
     g.setLineDash([]);
   };
-  const text = (s: string, x: number, y: number, cap: number, align: CanvasTextAlign = 'left', track = 0.12, weight = 400) => {
+  const text = (s: string, x: number, y: number, cap: number, align: CanvasTextAlign = 'left', track = 0.12, weight = 400,
+    maxW?: number) => {
     const px = (cap / 0.72) * PPM;
-    g.font = `${weight} ${px}px ${SFONTS.mono}`;
+    g.font = monoFont(cap, weight);
     ls(g, track * px);
     g.textAlign = align;
     g.textBaseline = 'alphabetic';
-    g.fillText(s, X(x), Y(y));
+    if (maxW) g.fillText(s, X(x), Y(y), maxW * PPM);
+    else g.fillText(s, X(x), Y(y));
   };
   // border
   line([[-hw + 0.5, -hh + 0.5], [hw - 0.5, -hh + 0.5], [hw - 0.5, hh - 0.5], [-hw + 0.5, hh - 0.5]], 0.14, null, true);
@@ -68,7 +90,8 @@ const drawSheet = () => {
   text('PATENT No. 0315-77     SHEET 1 OF 9', hw - 1.8, hh - 1.9, 0.5, 'right');
   line([[-hw + 1.6, hh - 2.4], [hw - 1.6, hh - 2.4]], 0.05);
   // title
-  text('METHOD FOR REPOSSESSION IN MOTION', 0, hh - 4.6, 1.45, 'center', 0.14, 500);
+  // maxWidth: a wider mono than the fallback squeezes the title instead of running it into the border
+  text('METHOD FOR REPOSSESSION IN MOTION', 0, hh - 4.6, 1.45, 'center', 0.14, 500, SHEET.w - 6);
 
   // ---------------------------------------------------------------- FIG. 1
   const k = 3.1; // drawing scale (sheet m per pod m)
@@ -150,8 +173,7 @@ const drawSheet = () => {
   text('FIG. 1', -hw + 3.2, gy + 0.6, 0.75, 'left', 0.2, 500);
   // the claim band
   line([[-hw + 1.6, 0.9], [hw - 1.6, 0.9]], 0.05);
-  text('CLAIM 1.', -hw + 1.8, SHEET.claim.row0, 0.55);
-  text('WHAT IS CLAIMED IS:', -hw + 1.8, SHEET.claim.row0 - 0.85, 0.42);
+  for (const [s, y, cap] of CLAIM_LABELS) text(s, LABEL_X, y, cap);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;

@@ -1,6 +1,7 @@
 // TERMS — Cancel: canvas textures for this scene (drawn once, cached at module level; system fonts only).
 //   pageTexture()   the landing page of the paper stair: the SAME page on every landing (form header, fine print, a red
 //                   CONTINUE button, "PAGE 1 OF 1"); the sung line is laid over it by <WorldLyric mode="paint">.
+//   buttonGlowTexture() that page's CONTINUE pill as a mask (label cut out) for the beat glow laid over it.
 //   drawerTexture() the canyon walls: endless filing drawers with pale label cards (4 × 4 m per repeat).
 //   treadTexture()  a stair tread: a sheet of paper with faint ruled print.
 //   edgeTexture()   the edge of a ream: stacked sheets (landing fronts).
@@ -30,6 +31,17 @@ export const PAGE_ASPECT = 2048 / 1448; // A-series landscape
 export const PAGE_BUTTON_PX = {bx: 2048 - 92 - 400, by: 1448 - 128, bw: 400, bh: 78};
 /** where the lyric block sits on the page (fractions of the page, from the far/top edge) */
 export const PAGE_LAYOUT = {lyricTop: 0.17, lyricBottom: 0.72};
+/**
+ * The button's printed red is a DIM authRed (linear ×0.6): the beat glow in ShotPages adds up to full authRed on top
+ * without overshooting (brighter authRed tone-maps toward orange under ACES).
+ */
+const BUTTON_RED = '#cb1f15';
+const buttonLabel = (g: CanvasRenderingContext2D, cx: number, baseline: number) => {
+  g.font = `600 34px ${SFONTS.futura}`;
+  setSpacing(g, 7);
+  g.textAlign = 'center';
+  g.fillText('CONTINUE  ›', cx, baseline);
+};
 let _page: THREE.Texture | null = null;
 export const pageTexture = () => {
   if (_page) return _page;
@@ -91,20 +103,38 @@ export const pageTexture = () => {
   g.textAlign = 'center';
   g.fillText('PAGE 1 OF 1', W / 2, H - 84);
   const {bx, by, bw, bh} = PAGE_BUTTON_PX;
-  g.fillStyle = '#ff2a1f';
+  g.fillStyle = BUTTON_RED;
   g.beginPath();
   g.roundRect(bx, by, bw, bh, bh / 2);
   g.fill();
   g.fillStyle = '#e9e6df';
-  g.font = `600 34px ${SFONTS.futura}`;
-  setSpacing(g, 7);
-  g.fillText('CONTINUE  ›', bx + bw / 2, by + bh / 2 + 12);
+  buttonLabel(g, bx + bw / 2, by + bh / 2 + 12);
   // a thin printed border
   g.strokeStyle = 'rgba(42,44,48,0.35)';
   g.lineWidth = 2;
   g.strokeRect(36, 36, W - 72, H - 72);
   _page = canvasTexture(c);
   return _page;
+};
+
+let _btn: THREE.Texture | null = null;
+/**
+ * The CONTINUE button as a glow mask, 1:1 with PAGE_BUTTON_PX: the white pill with its label cut out (same font and
+ * position as the printed label). The beat glow lies exactly over the printed pill, so no red spills onto the white
+ * paper or the label (red added to white reads pink).
+ */
+export const buttonGlowTexture = () => {
+  if (_btn) return _btn;
+  const {bw, bh} = PAGE_BUTTON_PX;
+  const {c, g} = mk(bw, bh);
+  g.fillStyle = '#fff';
+  g.beginPath();
+  g.roundRect(0, 0, bw, bh, bh / 2);
+  g.fill();
+  g.globalCompositeOperation = 'destination-out';
+  buttonLabel(g, bw / 2, bh / 2 + 12);
+  _btn = canvasTexture(c);
+  return _btn;
 };
 
 // ------------------------------------------------------------------------------------------------ filing drawers

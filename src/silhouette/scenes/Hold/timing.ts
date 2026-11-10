@@ -1,16 +1,19 @@
 // TERMS — Hold: every sync point of the scene in SONG SECONDS (lyrics via wordTime, beats from src/data/audio.json).
-// Scene = absolute frames 4678–4992 (155.93–166.40 s). sceneLyricLines(155.95, 166.39) = [36, 37].
+// Scene = absolute frames 4678–4992 (155.93–166.40 s). sceneLyricLines(155.95, 166.39) = [36, 37]; plus the tail word
+// "had." of [35] (sung 155.80–156.20, across the cut from Cancel).
 import {wordTime} from '../../../lib/lyrics';
 import {clamp01} from '../../../lib/time';
 
 export const SCENE = {f0: 4678, f1: 4992, t0: 4678 / 30, t1: 4992 / 30};
 
-/** lyric lines owned by this scene */
-export const L = {hold: 36, voice: 37} as const;
+/** lyric lines owned by this scene (+ the tail of Cancel's [35], still being sung across the cut) */
+export const L = {hold: 36, voice: 37, had: 35} as const;
 
 const w = wordTime;
 
 export const T = {
+  // [35] (Cancel's line) "…a cancel page had." — only its last word is still sung after the cut (155.93)
+  had: w(35, 'had'), // 155.80 (ends 156.20 = "Then")
   // [36] Then the hold music stopped, and the voice came through,
   then: w(36, 'Then'), // 156.20
   hold: w(36, 'hold'), // 156.88

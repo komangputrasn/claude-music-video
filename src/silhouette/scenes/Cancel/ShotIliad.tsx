@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import {S, GREYS, cameraFovForVisible} from '../../lib/palette';
 import {CameraRig} from '../../lib/SilStage';
 import {SilGuy} from '../../lib/SilCast';
-import {WorldLyric} from '../../lib/WorldLyric';
+import {WorldLyric, type WordInfo} from '../../lib/WorldLyric';
 import {WetGround, Backlight} from '../../lib/atmos';
 import {HeldSilHammer, GlowBillboard} from '../../lib/props';
 import {bassAt} from '../../../lib/time';
@@ -20,6 +20,14 @@ import {iliadMap, ILIAD_TILE, ILIAD_GRID} from './textures';
 import {T, L, SHOTS} from './timing';
 
 export const FOG_C = {color: GREYS.g1, near: 60, far: 420};
+/**
+ * The sung lines are opaque light-filled letters ('screen': bone, luminance ~0.8, just under the bloom threshold) with
+ * their own halo. As additive 'light' they summed with the red wall past the threshold, and the white bloom laid a grey
+ * haze over the block that turned CANCEL coral (~240,120,105). The wall keeps its bloom.
+ */
+const LYRIC = {mode: 'screen', intensity: 1, halo: 0.3} as const;
+/** control words: no onset flash above authRed × 1 (brighter tone-maps orange) */
+const noFlash = (_i: number, w: WordInfo) => (w.since < 0.22 ? 1 / 1.45 : 1);
 
 // ------------------------------------------------------------------------------------------------ the carved wall
 const WALL_VERT = /* glsl */ `
@@ -154,10 +162,10 @@ export const ShotIliad: React.FC<ShotProps> = ({t, f}) => {
       <IliadWall red={0.95 * k} front={front} />
       <Trench k={k} />
       {/* line 34: cut in light among the Greek at his scale; "ILIAD," set larger, like a title */}
-      <WorldLyric line={L.amazon} time={t} mode="light" size={EM34} intensity={1.05} halo={0.22} perWord={ROWS34}
+      <WorldLyric line={L.amazon} time={t} {...LYRIC} glow={noFlash} size={EM34} perWord={ROWS34}
         position={[0, LINE34_Y, 0.04]} until={SHOTS.iliad.t1 + 0.1} />
       {/* line 35: high on the wall, revealed by the crane */}
-      <WorldLyric line={L.honest} time={t} mode="light" size={EM35} intensity={1.05} halo={0.22} perWord={ROWS35}
+      <WorldLyric line={L.honest} time={t} {...LYRIC} glow={noFlash} size={EM35} perWord={ROWS35}
         position={[0, LINE35_Y, 0.04]} until={SHOTS.iliad.t1 + 0.1} />
       <SilGuy pose={pose} position={[0, 0, GUY_Z]} rotation-y={Math.PI} rim={{color: S.authRed, strength: 0.45, power: 6, dir: [0, -1]}}
         rightHand={<HeldSilHammer warmth={0.22} />} />

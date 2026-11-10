@@ -15,7 +15,7 @@ import {HeldSilHammer} from '../../lib/props';
 import {beatAt} from '../../../lib/time';
 import {GuyPose, guyIdle, mixPose, mergePose} from '../../../lib/characters/Guy';
 import {ShotProps, Instances, prog, smooth, mix, mixV, rowsPerWord, hash, V3} from './common';
-import {pageTexture, drawerTexture, treadTexture, edgeTexture, PAGE_ASPECT, PAGE_LAYOUT, PAGE_BUTTON_PX, DRAWER_TILE} from './textures';
+import {pageTexture, buttonGlowTexture, drawerTexture, treadTexture, edgeTexture, PAGE_ASPECT, PAGE_LAYOUT, PAGE_BUTTON_PX, DRAWER_TILE} from './textures';
 import {T, L, SHOTS} from './timing';
 
 export const FOG_B = {color: S.void, near: 15, far: 66};
@@ -141,30 +141,20 @@ const FallingPages: React.FC<{t: number}> = ({t}) => {
 };
 
 /**
- * The CONTINUE button on every page lights up on the beat (all in sync): the stair beckons. Additive red pills laid
- * exactly over the printed buttons (one draw call).
+ * The CONTINUE button on every page lights up on the beat (all in sync): the stair beckons. Additive red laid exactly
+ * over the printed (dim red) pills, label cut out, one draw call. k ≤ 0.6 tops the pill out at about full authRed:
+ * more tone-maps orange, and any spill onto the white paper reads pink.
  */
 const ContinueGlow: React.FC<{k: number}> = ({k}) => {
   const {mesh, mat} = useMemo(() => {
-    const c = document.createElement('canvas');
-    c.width = 256;
-    c.height = 64;
-    const g = c.getContext('2d')!;
-    g.filter = 'blur(5px)';
-    g.fillStyle = '#fff';
-    g.beginPath();
-    g.roundRect(14, 12, 228, 40, 20);
-    g.fill();
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    const mat = new THREE.MeshBasicMaterial({map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: true});
+    const mat = new THREE.MeshBasicMaterial({map: buttonGlowTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: true});
     const n = K_MAX - K_MIN + 1;
     const mesh = new THREE.InstancedMesh(PLANE, mat, n);
     const B = PAGE_BUTTON_PX;
     const cx = ((B.bx + B.bw / 2) / 2048 - 0.5) * ST.W;
     const cz = ((B.by + B.bh / 2) / 1448) * LD;
     const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
-    const sc = new THREE.Vector3((B.bw / 2048) * ST.W * 1.25, (B.bh / 1448) * LD * 1.9, 1);
+    const sc = new THREE.Vector3((B.bw / 2048) * ST.W, (B.bh / 1448) * LD, 1);
     for (let k = K_MIN; k <= K_MAX; k++) {
       const Lk = landing(k);
       mesh.setMatrixAt(k - K_MIN, new THREE.Matrix4().compose(new THREE.Vector3(cx, Lk.y + 0.008, Lk.z0 + cz), q, sc));
@@ -173,12 +163,9 @@ const ContinueGlow: React.FC<{k: number}> = ({k}) => {
     mesh.frustumCulled = false;
     return {mesh, mat};
   }, []);
-  useLayoutEffect(() => () => {
-    mat.map?.dispose();
-    mat.dispose();
-  }, [mat]);
+  useLayoutEffect(() => () => mat.dispose(), [mat]); // the mask texture is module-cached (textures.ts)
   useLayoutEffect(() => {
-    mat.color.set(S.authRed).multiplyScalar(Math.min(1.3, k));
+    mat.color.set(S.authRed).multiplyScalar(Math.min(0.6, k));
     mesh.visible = k > 0.01;
   });
   return <primitive object={mesh} />;
@@ -253,7 +240,7 @@ export const ShotPages: React.FC<ShotProps> = ({t}) => {
       <Canyon />
       <StairOfPages />
       <FallingPages t={t} />
-      <ContinueGlow k={0.15 + 1.0 * beatAt(t, 7).pulse} />
+      <ContinueGlow k={0.08 + 0.52 * beatAt(t, 7).pulse} />
       {/* the same page on every landing: the sung line printed on each, word by word, all in sync */}
       {landings.map((k) => {
         const Lk = landing(k);

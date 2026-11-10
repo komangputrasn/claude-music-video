@@ -6,7 +6,7 @@ import React from 'react';
 import {S, cameraFovForVisible} from '../../../lib/palette';
 import {SilStage, CameraRig} from '../../../lib/SilStage';
 import {SilGuy, SilPancake} from '../../../lib/SilCast';
-import {FinalLyric} from '../FinalLyric';
+import {WorldLyric, measureLyric} from '../../../lib/WorldLyric';
 import {FogLayers, WetGround} from '../../../lib/atmos';
 import {HeldPaperBook} from '../../../lib/props';
 import {guyHoldUp, mergePose} from '../../../../lib/characters/Guy';
@@ -16,10 +16,17 @@ import {DawnSky, fogAt, goldRim} from '../Dawn';
 import {Skyline, CITY_DARK} from '../City';
 import {dyingRed} from '../lyricFx';
 import {easeOut, smooth} from '../timing';
-import {pxToM, screenPoint, V3} from '../frame';
+import {fitEm, halfWidthAt, pxToM, screenPoint, V3} from '../frame';
 
 const VIS = 21;
 const deg = Math.PI / 180;
+/**
+ * explicit rows (font-independent), short so the block stays right of the raised, blooming book: [38]'s tail as S1's
+ * blocks, [39] with "1984" on its own row next to the book (as it is sung)
+ */
+const ROWS: Record<number, number[][]> = {38: [[0, 1], [2, 3], [4, 5, 6], [7, 8]], 39: [[0, 1, 2, 3], [4], [5, 6], [7, 8]]};
+const LX = 0.42; // block centre, visible-picture x (the book is raised at ≈ −0.16)
+const LY = 0.5;
 
 export const Book: React.FC<{t: number; f: number; u: number}> = ({t, u}) => {
   const fov = cameraFovForVisible(VIS);
@@ -33,8 +40,10 @@ export const Book: React.FC<{t: number; f: number; u: number}> = ({t, u}) => {
   // lyric block: bone light ~70 m behind him, in the upper part of the picture (fixed in the world: mid-shot camera)
   const midCam: V3 = [0, 0.95, 7.0];
   const ld = 77;
-  const em = pxToM(70, ld, VIS);
-  const lp = screenPoint(midCam, target, VIS, 0.3, 0.54, ld);
+  // one size for both lines; the widest row (+15 % for wider fonts) stays inside 94 % of the picture
+  const wide = Math.max(...[38, 39].map((l) => measureLyric(l, 1, undefined, {rows: ROWS[l]}).width));
+  const em = fitEm(pxToM(70, ld, VIS), wide, 2 * (0.94 - LX) * halfWidthAt(ld, VIS));
+  const lp = screenPoint(midCam, target, VIS, LX, LY, ld);
   const sunX = (D + camZ) * Math.tan(13 * deg);
   return (
     <SilStage fog={{color: fogAt(t), near: 200, far: 3200}} camera={{far: 4000, near: 0.2}}>
@@ -46,7 +55,7 @@ export const Book: React.FC<{t: number; f: number; u: number}> = ({t, u}) => {
       <FogLayers count={4} near={60} far={500} width={1600} height={80} color={fogAt(t, 0.45)} density={0.05} time={t} scale={200} position={[0, 0, -10]} />
       {/* sky text: not mirrored in the wet plain (its reflection would poke up, cut, at the bottom edge) */}
       {[38, 39].map((line) => (
-        <FinalLyric key={line} line={line} time={t} mode="light" size={em} maxWidth={em * (line === 38 ? 15 : 11)} intensity={0.9} halo={0.35}
+        <WorldLyric redFill={1} key={line} line={line} rows={ROWS[line]} time={t} mode="light" size={em} intensity={0.9} halo={0.35}
           position={lp} mirror={false} perWord={dyingRed(t, {size: em, dir: 1, seed: line})} />
       ))}
       <SilGuy pose={pose} hood={0} position={[0, 0, 0]} rim={goldRim(t, [0.45, 1], 0.5)}

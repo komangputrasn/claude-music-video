@@ -2,12 +2,13 @@
 // the dog (three-quarter, tail going) walk side by side across the wet plain toward the house, a black cube far right
 // with its door open on gold light and one warm window. Its TENURE iris lock is a dead black disc. Above the house,
 // where TENURE's price used to float, [42] hangs as bone light (BUY red, dying; GOOD gold). [41]'s last word holds
-// there for its last half-second.
+// there for its last half-second. The dying words fall only ~0.9 em (maxDrop) and are gone before they reach the row
+// below, well clear of the house roof.
 import React from 'react';
 import {S, cameraFovForVisible} from '../../../lib/palette';
 import {SilStage, CameraRig} from '../../../lib/SilStage';
 import {SilGuy, SilPancake} from '../../../lib/SilCast';
-import {FinalLyric} from '../FinalLyric';
+import {WorldLyric, measureLyric} from '../../../lib/WorldLyric';
 import {FogLayers, WetGround} from '../../../lib/atmos';
 import {HouseCube} from '../../../lib/sets';
 import {guyWalk, GUY} from '../../../../lib/characters/Guy';
@@ -15,7 +16,7 @@ import {pancakeWalk} from '../../../../lib/characters/Pancake';
 import {DawnSky, fogAt, goldRim} from '../Dawn';
 import {Skyline, CITY_DARK} from '../City';
 import {dyingRed} from '../lyricFx';
-import {pitchTarget, pxToM, screenPoint, V3} from '../frame';
+import {fitEm, halfWidthAt, pitchTarget, pxToM, screenPoint, V3} from '../frame';
 
 const SPEED = GUY.strideLength * 0.94; // ≈ 1.07 m/s
 export const HOUSE_AT: V3 = [17, 0, -76];
@@ -23,6 +24,12 @@ const VIS = 19;
 const PITCH = 1.4;
 const YAW = 3; // deg, toward the house
 const deg = Math.PI / 180;
+/** explicit rows (font-independent) */
+const ROWS: Record<number, number[][]> = {41: [[0, 1, 2], [3, 4, 5]], 42: [[0, 1, 2, 3], [4, 5, 6, 7, 8]]};
+const LX = 0.34; // block centre, visible-picture x (over the house)
+// block centre, visible-picture y: the 2-row block sits where the approved 3-row wrap had its first two rows, so the
+// bottom row ("BUT I'M GOOD FOR") stays ~80 px (of 1080) above the house roof
+const LY = 0.68;
 
 export const Walk: React.FC<{t: number; f: number; u: number}> = ({t, f}) => {
   const fov = cameraFovForVisible(VIS);
@@ -33,8 +40,9 @@ export const Walk: React.FC<{t: number; f: number; u: number}> = ({t, f}) => {
   // lyric over the house (fixed in the world, framed for the mid-shot camera)
   const midCam: V3 = [1.3, 1.05, 9.6 - SPEED * 2.15];
   const ld = midCam[2] - HOUSE_AT[2];
-  const em = pxToM(62, ld, VIS);
-  const lp = screenPoint(midCam, pitchTarget(midCam, PITCH, YAW), VIS, 0.34, 0.57, ld - 10);
+  const wide = Math.max(...[41, 42].map((l) => measureLyric(l, 1, undefined, {rows: ROWS[l]}).width));
+  const em = fitEm(pxToM(62, ld, VIS), wide, 2 * (0.94 - LX) * halfWidthAt(ld - 10, VIS));
+  const lp = screenPoint(midCam, pitchTarget(midCam, PITCH, YAW), VIS, LX, LY, ld - 10);
   const sunX = (D + cam[2]) * Math.tan(-2 * deg);
   return (
     <SilStage fog={{color: fogAt(t), near: 120, far: 3000}} camera={{far: 4000, near: 0.3}}>
@@ -47,8 +55,8 @@ export const Walk: React.FC<{t: number; f: number; u: number}> = ({t, f}) => {
       <HouseCube position={HOUSE_AT} time={t} warmWindow={1} doorOpen={1} interior={0.9} interiorColor={S.dawnGold}
         doorIris={{intensity: 0, open: 1, glow: 0}} irisLight={0} />
       {[41, 42].map((line) => (
-        <FinalLyric key={line} line={line} time={t} mode="light" size={em} maxWidth={em * 15} intensity={1.0} halo={0.4}
-          position={lp} mirror={false} perWord={dyingRed(t, {size: em, dir: 1, seed: line + 7})} />
+        <WorldLyric redFill={1} key={line} line={line} rows={ROWS[line]} time={t} mode="light" size={em} intensity={1.0} halo={0.4}
+          position={lp} mirror={false} perWord={dyingRed(t, {size: em, dir: 1, seed: line + 7, maxDrop: 0.9})} />
       ))}
       <SilGuy pose={guyWalk(t)} hood={0} rotation-y={Math.PI} position={[0, 0, z]} rim={goldRim(t, [0, 1], 0.45)} />
       <SilPancake pose={{...pancakeWalk(t, SPEED, 1), tailWagAmount: 1, earPerk: 0.4}} rotation-y={Math.PI - 0.25} position={[0.75, 0, z - 0.25]}

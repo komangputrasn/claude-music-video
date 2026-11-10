@@ -7,12 +7,12 @@ import {S, GREYS, cameraFovForVisible} from '../../lib/palette';
 import {CameraRig} from '../../lib/SilStage';
 import {SilGuy} from '../../lib/SilCast';
 import {Crowd} from '../../lib/Crowd';
-import {WorldLyric} from '../../lib/WorldLyric';
+import {WorldLyric, measureLyric} from '../../lib/WorldLyric';
 import {Backlight, WetGround, LightPool} from '../../lib/atmos';
 import {TenureScreen, IrisWall, screenDims} from '../../lib/tenure';
 import {bassAt, lerp} from '../../../lib/time';
 import {guyWalk, GUY} from '../../../lib/characters/Guy';
-import {ShotProps, prog, easeOut, Slab, rowsPerWord, RIM_BONE} from './common';
+import {ShotProps, prog, easeOut, Slab, RIM_BONE} from './common';
 
 export const SHOT_E = {t0: 74.61, t1: 78.95};
 export const FOG_E = {color: S.ash, near: 40, far: 320};
@@ -24,7 +24,9 @@ const BIG = {width: 54, height: 17.5, content: {chrome: true, lines: []}};
 const RED = {width: 13, height: 21};
 const redContent = {chrome: false, lines: [{text: 'BUY', size: 0.2, tracking: 0.3, ink: 'void' as const}, {text: 'NOW', size: 0.2, tracking: 0.3, ink: 'void' as const, gap: 0.08}]};
 
-const ROWS16 = rowsPerWord(16, 3.05, [[0, 1, 2, 3], [4, 5, 6, 7, 8]]);
+const EM = 3.05; // em of the screen lyric, unless the wider row would fill more than FIT of the face
+const FIT = 0.85; // >= 15% margin on any font (measured at runtime)
+const ROWS16 = [[0, 1, 2, 3], [4, 5, 6, 7, 8]];
 
 export const ShotCrowd: React.FC<ShotProps> = ({t, f}) => {
   const lt = t - SHOT_E.t0;
@@ -38,6 +40,7 @@ export const ShotCrowd: React.FC<ShotProps> = ({t, f}) => {
   }, []);
   const big = screenDims({width: BIG.width, height: BIG.height});
   const bigY = 10.5;
+  const em = useMemo(() => Math.min(EM, (EM * FIT * BIG.width) / Math.max(...measureLyric(16, EM, undefined, {rows: ROWS16}).rowWidths)), []);
   return (
     <>
       <CameraRig position={[0, 1.25, lerp(12, 9.5, easeOut(u))]} target={[0, 9.5, WALL_Z]} fov={cameraFovForVisible(24)} />
@@ -45,7 +48,7 @@ export const ShotCrowd: React.FC<ShotProps> = ({t, f}) => {
       {/* the screen wall */}
       <Slab size={[260, 80, 4]} position={[0, 0, WALL_Z - 2]} color={GREYS.g2} ambient={0.03} />
       <TenureScreen position={[0, bigY, WALL_Z]} width={BIG.width} height={BIG.height} content={BIG.content} time={t} pulse={bass} haze={0.3} intensity={1.15} />
-      <WorldLyric line={16} time={t} mode="screen" size={3.05} position={[0, bigY + big.border + BIG.height * 0.58, WALL_Z + big.depth + 0.06]} until={SHOT_E.t1 + 0.05} perWord={ROWS16} />
+      <WorldLyric line={16} time={t} mode="screen" size={em} rows={ROWS16} anchor="baseline" position={[0, bigY + big.border + BIG.height * 0.58, WALL_Z + big.depth + 0.06]} until={SHOT_E.t1 + 0.05} />
       {[-1, 1].map((s) => (
         <TenureScreen key={s} position={[s * 42, 6, WALL_Z]} width={RED.width} height={RED.height} content={redContent} background="red" time={t + s} pulse={bass} intensity={1.05} haze={0.25} />
       ))}

@@ -5,6 +5,8 @@
  * cut-out against the panel, his hood cutting into the bottom of the eye. The sung line is projected across the
  * facade above the door; on "Who?" the iris snaps shut to a pinpoint, a red scan line runs down the door over him and
  * "IDENTITY NOT ON PLAN" lights up in red over the lintel. He turns away, toward the window.
+ * (The scan line is a SOLID authRed line, not the additive lib ScanLine: red added onto the bone door panel read
+ * pinkish-white, and orange where it crossed the iris.)
  */
 import React from 'react';
 import {SilStage, CameraRig} from '../../lib/SilStage';
@@ -12,7 +14,7 @@ import {SilGuy} from '../../lib/SilCast';
 import {Iris} from '../../lib/Iris';
 import {WorldLyric} from '../../lib/WorldLyric';
 import {S, GREYS, SFONTS, cameraFovForVisible} from '../../lib/palette';
-import {Backlight, ScanLine, SilRain, WetGround} from '../../lib/atmos';
+import {Backlight, SilRain, WetGround} from '../../lib/atmos';
 import {HouseCube, HOUSE_SPOTS} from '../../lib/sets';
 import {guyIdle, guyWalk, mergePose, mixPose} from '../../../lib/characters/Guy';
 import {bassAt, clamp01, lerp, ramp} from '../../../lib/time';
@@ -24,6 +26,7 @@ const DOOR_FACE_Z = F - 0.6 + 0.045; // front face of the door slab (reveal 0.6,
 const DOOR_Y0 = 0.37; // step top
 const DOOR_H = 2.5;
 const IRIS_Y = 2.28;
+const SCAN_T = 0.035; // scan line thickness (m): ~3 px at this distance
 
 const s01 = (t: number, a: number, b: number) => clamp01((t - a) / (b - a));
 
@@ -58,9 +61,12 @@ export const ShotDoor: React.FC<{t: number; abs: number}> = ({t, abs}) => {
         intensity={0.6} time={t} />
       <Iris position={[0, IRIS_Y, DOOR_FACE_Z + 0.01]} radius={0.4} open={open} pupil={pupil} intensity={1.45 + 0.2 * who}
         time={t} glow={0.6} />
+      {/* the scan runs down the door (behind him): a solid red line drawn over the panel and the iris */}
       {scan > 0 && scan < 1 ? (
-        <ScanLine position={[0, DOOR_Y0 + DOOR_H / 2, DOOR_FACE_Z + 0.02]} width={1.2} height={DOOR_H} axis="y" progress={1 - scan}
-          direction={-1} intensity={1.3} />
+        <mesh position={[0, DOOR_Y0 + DOOR_H * (1 - scan), DOOR_FACE_Z + 0.02]} scale={[1.2, SCAN_T, 1]} renderOrder={3}>
+          <planeGeometry />
+          <meshBasicMaterial color={S.authRed} transparent depthWrite={false} fog={false} />
+        </mesh>
       ) : null}
 
       {/* the sung line, projected across the facade; then "so" */}

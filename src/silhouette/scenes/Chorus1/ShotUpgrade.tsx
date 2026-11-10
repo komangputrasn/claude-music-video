@@ -3,11 +3,11 @@
 // sung — each one slams on with its word (I'M · DONE · WITH / UPGRADE · TO · CONTINUE), a sequence of light, then they
 // all breathe on the bass. Terms scroll up the piers. He stands small at the foot, black against the lit entrance;
 // over the entrance a small screen wakes with "CLICK" just before the cut.
-import React from 'react';
+import React, {useMemo} from 'react';
 import {S, GREYS, cameraFovForVisible} from '../../lib/palette';
 import {CameraRig} from '../../lib/SilStage';
 import {SilGuy} from '../../lib/SilCast';
-import {WorldLyric} from '../../lib/WorldLyric';
+import {WorldLyric, measureLyric} from '../../lib/WorldLyric';
 import {Backlight, WetGround} from '../../lib/atmos';
 import {TenureScreen, TermsScroll, IrisWall, screenDims} from '../../lib/tenure';
 import {bassAt, lerp} from '../../../lib/time';
@@ -25,6 +25,12 @@ const COLS = [-34, 0, 34];
 const ROWS = [26.2, 12.6]; // base y of the top row / bottom row
 const BLANK = {chrome: true, lines: []};
 const DOOR = {w: 7, h: 4.6};
+const SMW = 17, SMH = 5; // the small screen over the entrance
+// word em on the big screens / on the small one, unless the widest word would fill more than FIT of its face
+// (measured at runtime: >= 25% margin on any font)
+const EM = 3.35;
+const EM_CLICK = 2.9;
+const FIT = 0.75;
 
 export const ShotUpgrade: React.FC<ShotProps> = ({t, f}) => {
   const u = prog(t, SHOT_G.t0, SHOT_G.t1);
@@ -33,7 +39,10 @@ export const ShotUpgrade: React.FC<ShotProps> = ({t, f}) => {
   const d = screenDims({width: SW, height: SH});
   const cell = (i: number) => ({x: COLS[i % 3], y: ROWS[i < 3 ? 0 : 1] + d.border + SH / 2});
   const tClick = LINES[19].words[0].start;
-  const SMW = 17, SMH = 5;
+  const {em, emClick} = useMemo(() => ({
+    em: Math.min(EM, (EM * FIT * SW) / Math.max(...LINES[18].words.map((w) => measureLyric(w.text, EM).width))),
+    emClick: Math.min(EM_CLICK, (EM_CLICK * FIT * SMW) / measureLyric(LINES[19].words[0].text, EM_CLICK).width),
+  }), []);
   const small = screenDims({width: SMW, height: SMH});
   return (
     <>
@@ -66,12 +75,12 @@ export const ShotUpgrade: React.FC<ShotProps> = ({t, f}) => {
         line={18}
         time={t}
         mode="screen"
-        size={3.35}
+        size={em}
         position={[0, 0, FZ + d.depth + 0.07]}
         until={SHOT_G.t1 + 0.05}
         perWord={(i, w) => {
           const c = cell(i);
-          return {offset: [c.x - (w.x + w.width / 2), c.y - (w.y + 0.35 * 3.35), 0]};
+          return {offset: [c.x - (w.x + w.width / 2), c.y - (w.y + 0.35 * em), 0]};
         }}
       />
       {/* the building watches: a band of irises above the grid; a pulse ripples out from the centre on the downbeat */}
@@ -87,10 +96,10 @@ export const ShotUpgrade: React.FC<ShotProps> = ({t, f}) => {
         line={19}
         time={t}
         mode="screen"
-        size={2.9}
+        size={emClick}
         position={[0, 5.6 + small.border + SMH / 2, FZ + small.depth + 0.07]}
         until={SHOT_G.t1 + 0.05}
-        perWord={(i, w) => (i === 0 ? {offset: [-(w.x + w.width / 2), -(w.y + 0.35 * 2.9), 0]} : {visible: false})}
+        perWord={(i, w) => (i === 0 ? {offset: [-(w.x + w.width / 2), -(w.y + 0.35 * emClick), 0]} : {visible: false})}
       />
       <SilGuy pose={{...guyIdle(t, 7), headPitch: -0.28}} rotation-y={Math.PI} position={[0, 0, -16]} rim={{...RIM_BONE, strength: 0.8}} />
     </>

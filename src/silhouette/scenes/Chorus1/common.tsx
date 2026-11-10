@@ -4,8 +4,6 @@ import * as THREE from 'three';
 import {S, GREYS, SFONTS, hdr} from '../../lib/palette';
 import type {RimOpts} from '../../lib/Silhouette';
 import {concreteMat, wboxMinMax, mergeBoxes} from '../../lib/sets';
-import {measureLyric, displayWord, WordInfo, WordFx} from '../../lib/WorldLyric';
-import {LINES} from '../../../lib/lyrics';
 
 export type ShotProps = {
   /** song seconds */
@@ -23,31 +21,6 @@ export const easeInOut = (u: number) => u * u * (3 - 2 * u);
 export const easeOut = (u: number) => 1 - (1 - u) * (1 - u);
 /** decaying flash after time `at` (1 at onset) */
 export const flashAfter = (t: number, at: number, decay = 6) => (t >= at ? Math.exp(-(t - at) * decay) : 0);
-
-/**
- * Explicit line breaks for a <WorldLyric>: `rows` = groups of word indices. Returns a perWord function that moves every
- * word to its place in centred rows (row 0's baseline at the group origin, rows stacking down by lineHeight·size).
- * Words not listed are hidden.
- */
-export const rowsPerWord = (line: number, size: number, rows: number[][], lineHeight = 1.18, align: 'center' | 'left' | 'right' = 'center') => {
-  const words = LINES[line].words.map((w) => displayWord(w.text));
-  const sp = 0.42 * size;
-  const target: ({x: number; y: number} | undefined)[] = [];
-  rows.forEach((r, ri) => {
-    const widths = r.map((i) => measureLyric(words[i], size).width);
-    const total = widths.reduce((a, b) => a + b, 0) + sp * (r.length - 1);
-    let x = align === 'center' ? -total / 2 : align === 'left' ? 0 : -total;
-    r.forEach((i, k) => {
-      target[i] = {x: x + widths[k] / 2, y: -ri * lineHeight * size};
-      x += widths[k] + sp;
-    });
-  });
-  return (i: number, w: WordInfo): WordFx => {
-    const T = target[i];
-    if (!T) return {visible: false};
-    return {offset: [T.x - (w.x + w.width / 2), T.y - w.y, 0]};
-  };
-};
 
 export const RIM_BONE: RimOpts = {color: S.bone, strength: 0.9, power: 5, dir: [0, 1]};
 export const RIM_RED: RimOpts = {color: S.authRed, strength: 0.7, power: 5, dir: [0, 1]};

@@ -15,7 +15,7 @@ src/silhouette/
     SilCast.tsx            <SilGuy hood>, <SilPancake>
     Iris.tsx               <Iris>, IRIS_GLSL, makeIrisMaterial(), setIrisUniforms()
     SilStage.tsx           <SilStage>, CameraRig (re-export), SIL_BLOOM, SIL_LENS
-    Crowd.tsx              <Crowd> instanced crowds of identical hooded silhouettes, crowdLayout()
+    Crowd.tsx              <Crowd> instanced crowds of identical hooded silhouettes, crowdLayout(), CROWD_LOOKUP
     WorldLyric.tsx         <WorldLyric> the lyrics staged INSIDE the world; sceneLyricLines(), metresForPx(), lyricWindow()
     atmos/  tenure/  sets/  props/    (modules: see §3; each has its own INDEX.md API reference)
   overlays/SilOverlays.tsx <Letterbox> (the only global overlay), <SilOverlays>; <SilCaptions> = unmounted debug tool
@@ -103,35 +103,114 @@ Always pass `rim.dir` (screen-space vector toward the backlight) — without it 
 film), 0 = down (Final chorus reveals the spiky-hair outline), in between folds it back. Hand props become silhouettes
 too (unless silKeep). `<SilPancake pose rim? color? {...group}/>` — keep him in profile / three-quarter; tail still
 (`tailWagAmount: 0`) until after the hammer. Verified: `.preview/out/silplay-Core/` (`silplay Core`).
+- **The hood is one cowl, skinned to the rig.** It is a single closed, double-sided loft rebuilt on the CPU every render.
+  The crown, brim and face part ride the HEAD joint, the nape blends head → neck → chest, and the hem lies on the upper
+  back and shoulders (chest joint). So the back of the hood is always one continuous line from the crown into the back,
+  and nothing can swing off the neck (the old "ponytail"). Checked from 8 yaws at head pitch −0.3 / 0.15 / 0.6, in the
+  walk, kneel, climb, sit and bed poses, with the phone at the ear and with the hammer (held and swung). A soft point at
+  the back of the crown and a brim ~3 cm proud of the forehead make it read as a hood, not a helmet. You no longer need
+  to keep his head pitch low or move a bow into the torso: look down with `headPitch` freely (≤ ~0.6).
+- **Hood 1 → 0:** the hood flattens, shrinks and swings back over the nape until it lies on the upper back. Below 0.5 the
+  hair (and the rig's own hood-down collar) appears and the hood bunches toward the nape; at ≤ 0.02 it is gone. Animate
+  it over ~0.6 s. It reads cleanly from behind and in front (Final's pull at 168.35–168.95). In strict profile, around
+  hood 0.4–0.5 the falling hood shows for a few frames as a flap behind the neck.
+- Props held at the head (the phone at the ear) sit at the side of the hood and partly overlap it. The hand and elbow
+  still carry the gesture.
+- The hood is not a `LatheGeometry` and not the rig's `hoodBack`/`hoodRing`. Do not hide or extend it from scene code.
+  The old local fixes are now redundant and should go: V1Bedroom's `CellGuy` drape (harmless, but plain `SilGuy` now
+  does the job) and Pre's `HoodFill` neck sphere (it now pokes out of the cowl as a bump at the nape).
+- `<SilPancake>` adds a small knot at the joint between the rig's two tail tubes, which used to show as a V notch in the
+  curl from the rear three-quarter (V2Rain WAITING, V1Feeder).
 
 ### `<Iris>` — the TENURE mark
 `<Iris open?={1} pupil?={0.32} radius?={0.5} intensity?={1.5} color?={S.authRed} time? housing?={true} flicker?={0}
 glint?={true} opacity? {...group}/>` — flat disc facing +Z. `open` 0→1 opens it from a pinpoint; `pupil` dilates;
-`time` drives blade rotation + a slow scan sweep; `flicker` 0..1 = failing (Final). `IRIS_GLSL` exports the drawing
-function `vec4 irisLayers(vec2 p, float open, float pupil, float time)` for instanced iris walls.
+`time` drives blade rotation + a slow scan sweep; `flicker` 0..1 = failing (Final). The bone `glint` in the pupil
+fades with `intensity` below 1 (full at ≥ 1, gone at 0), so an iris dimmed to `intensity={0}` is a plain black housing
+disc (a dead eye / "black sun") without `glint={false}`. `IRIS_GLSL` exports the drawing function
+`vec4 irisLayers(vec2 p, float open, float pupil, float time)` for instanced iris walls (`IrisWall` and `PillowIris`
+draw their own glint: it does not follow this rule).
 
 ### `<Crowd>` — identical hooded silhouettes (Chorus1, Final)
 `<Crowd count?={200} seed? area?={[30,40]} spacing?={1.3} facing?={0} facingJitter?={0.15} time? sway?={1} lookUp?={0}
-lookUpSpread?={0.6} hood?={1} exclude?={[[x,z,r]]} rim? color? fog? {...group}/>` — instanced (3 draw calls for
-hundreds), jittered grid over `area` centred on the origin, everyone faces `facing` (0 = +Z). `lookUp` 0..1 tilts heads
-up in a staggered wave (Final). `exclude` clears circles (a lane for the Guy walking against them — give him a rim or a
-light behind him so he separates from the mass). `crowdLayout(props)` returns the slots. Verified:
+lookUpSpread?={0.6} hood?={1} exclude?={[[x,z,r]]} rim? color? fog? {...group}/>` — instanced (a handful of draw calls
+for hundreds), jittered grid over `area` centred on the origin, everyone faces `facing` (0 = +Z). `exclude` clears
+circles (a lane for the Guy walking against them — give him a rim or a light behind him so he separates from the mass).
+`crowdLayout(props)` returns the slots. Verified:
 `.preview/out/silplay-CrowdTest/` (`silplay CrowdTest`; f150/f195 show a red iris failing above a crowd — a dead iris
 leaves its black housing disc: a "black sun").
+- `lookUp` 0..1 makes the figures look UP in a staggered wave (Final). The upper body arches back 0.08 rad about the
+  waist. The head tilts back 0.8 rad (a quarter at the base of the neck, the rest about the skull base, so the head
+  stays over the shoulders). The hood slides 0.35 rad back off the brow and a chin-and-nose profile points at the sky
+  (`CROWD_LOOKUP` exports the angles). It reads best side-on (Final's CrowdUp), well from a low front, and least from
+  behind. `lookUp={0}` renders byte-identically to the crowd before this feature (checked against HEAD, hooded and bare).
 
 ### `<WorldLyric>` — the lyrics, inside the world
 `<WorldLyric line={i} time={songT} size?={0.5 /*em, metres*/} mode?='light'|'screen'|'paint'|'dark' maxWidth? align?
-anchor? color? intensity? from? until? reveal?='word'|'line' halo? fog? opacity? flicker? perWord? font? {...group}/>`
+anchor?='center'|'top'|'bottom'|'baseline' color? intensity? from? until? reveal?='word'|'line' halo? fog? opacity?
+flicker? perWord? font? weight? lineHeight?={1.18} tracking?={0.15} rows? rowScale? verbatim?={false} glow?
+redFill?={0} goldGlow?={1} mirror?={true} {...group}/>`
 - Words appear one at a time exactly when sung; control words authRed (flash on onset), final-chorus free words dawnGold.
 - `light` = additive light projected into haze/onto walls (soft halo, ignores fog); `screen` = emissive letters on a
   TENURE screen; `paint` = matte print/stencil on a surface (fog, no bloom); `dark` = black letters against a bright
   sky/backlight (control/free words get a coloured glow behind them).
 - Default window: first sung word → next line's first word. Override with `from`/`until` (e.g. keep a line on a wall
   until the cut). `perWord(i, info)` animates individual words (ash drift, falling letters, flicker per word).
+- Anchor: `'center'` (default) | `'top'` (row 0's cap line) | `'bottom'` (last row's baseline) | `'baseline'` (row 0's
+  baseline at the origin). Baselines step down by `lineHeight·size`; cap height = 0.7·size.
 - Helpers: `sceneLyricLines(t0, t1)` (the lines your scene must stage), `lyricWindow(i)`, `metresForPx(px, dist, fov)`,
-  `measureLyric(i, size, maxWidth)`, `lyricWordColor()`, `displayWord()`.
+  `measureLyric(i|text, size, maxWidth?, {font, weight, tracking, lineHeight, rows, rowScale, verbatim})` →
+  `{width, height, rows, rowWidths, rowWords}` (`rowWords` = the balanced wrap's word indices per row, ready to edit and
+  pass back as `rows`), `lyricWordColor()`, `displayWord()`.
 - Verified: `.preview/out/silplay-Lyrics/` (`silplay Lyrics`): f0 light on fog, f1 screen, f2 paint, f3 dark vs gold,
   f4 per-word ash drift.
+
+**Opt-in extras.** Each default renders byte-identically to the plain component; this was checked against
+`silplay Lyrics`, V2Rain, Cancel, Chorus1 and V1Feeder.
+- `rows={[[0, 1, 2], [3, 4]]}`: explicit line breaks, word indices per row. Words you don't list are hidden, and
+  `maxWidth` is ignored. Rows use the same 0.42 em word gap, `align`/`anchor`/`lineHeight`/`tracking`/`size` and baseline
+  convention as the balanced wrap. `rows` equal to the wrap renders byte-identically. Timing is untouched: each word still
+  appears when sung, and with `reveal='line'` the block appears at the line's first sung word even if that word is
+  hidden. To split one line around a door, dial or slit, use several instances that each list a subset:
+  ```tsx
+  <WorldLyric line={25} time={t} rows={[[0, 1, 2], [3, 4, 5]]} align="right" size={0.3} position={[-1.1, 2, 0]} />
+  <WorldLyric line={25} time={t} rows={[[6, 7, 8], [9, 10]]} align="left" size={0.3} position={[1.1, 2, 0]} />
+  ```
+  This replaces the local `LyricBlock` (V2Rain), `LyricRows` (Swing, Hold), `RowLyric` (V1Feeder), `rowsPerWord`
+  (Chorus1, Cancel) and `placeWords` (V2Car). Their "row 0 baseline at the origin" convention is `anchor="baseline"`.
+  The local helpers' `rowGap` is `lineHeight`.
+- `rowScale={[1, 1, 2.1]}` (with `rows`): a size multiplier per row, default 1. Row pitch is `lineHeight·size·max(the
+  two rows' scales)`. `'top'`/`'baseline'` use row 0's scaled cap height. Glyphs render at the row's size, so no
+  `perWord` scale compensation is needed (Cancel's ILIAD row):
+  `<WorldLyric line={34} time={t} rows={[[0, 1, 2], [3, 4], [5]]} rowScale={[1, 1, 2.1]} anchor="baseline" …/>`
+- `perWord(i, info)` / `glow(i, info)`: `i` is always the word's index in the line, or in `text`, even with `rows`.
+  `info` (type `RowWordInfo`) = `{text, start, since, row, x, y, width}` plus the row slot `{col, rowX, rowWidth,
+  rowStart}`. `x, y` are the word's left baseline point. `rowX`/`rowWidth` are the row's left edge and width in metres.
+  `rowStart` is the onset of the row's first word. Callbacks typed with plain `WordInfo` still fit. V1Feeder's
+  `slot.rowCx` = `info.rowX + info.rowWidth / 2`.
+- `verbatim` (default false): custom `text` is drawn exactly as given, keeping case and every character. By default
+  `displayWord()` upper-cases and strips straight and curly double quotes and `,` `.` `;` `:`, so "03:15" would read
+  "0315". Write the case you want.
+  Ignored for sung `line`s:
+  `<WorldLyric text="$4.99 / NIGHT" verbatim time={t} mode="screen" font={SFONTS.mono} size={0.45} …/>`
+- `glow={(i, info) => 0..1}`: the colour of each control/free (red/gold) word, called for those words only. 1 = full
+  colour. Values in between scale its flash/glow down. 0 = the word loses its colour but stays visible: a plain black
+  letter in `dark`, the base colour in the other modes. Use it to let the last red die without removing the word:
+  `glow={(i, w) => (w.since < 0.9 ? 1 : 0)}`.
+- `redFill` (default 0 = off): in `'light'`/`'dark'` modes, values > 0 draw control words as SOLID authRed letters at
+  this brightness (×0.8 in dark). They use normal blending and keep only a faint red halo (light: `halo×0.45`; dark:
+  glow ×0.3). Use it on gold or bright haze, where additive red, or a red glow behind a black letter, tone-maps
+  ORANGE: `<WorldLyric line={41} time={t} mode="light" redFill={1} …/>`.
+- `goldGlow` (default 1): in `'dark'` mode, a multiplier on the gold glow behind gold words. At 1 the glow is capped
+  at 2× gold, which fades on a bright gold sky; values > 1 burn hotter: `goldGlow={1.4}` (Final's BOWL/GROUND).
+- `mirror` (default true): `false` makes the words invisible to every camera except the scene's default camera, so
+  they don't appear in WetGround's reflection or in render targets. Use it for text high in the sky whose mirror image
+  would land somewhere unrelated: `<WorldLyric … mirror={false} />`.
+- **Final migration:** `scenes/Final/FinalLyric.tsx` = lib `<WorldLyric redFill={1} />`. Its code default is
+  `redFill = 1`; the header comment's "0.9" is stale, and no Final call passes `redFill`. Keep every other prop as is
+  (`glow`, `goldGlow={1.4}`, `mirror={false}` are the same props). Verified byte-identical: lib vs FinalLyric with
+  redFill 1 + glow drain + goldGlow 1.4 + mirror false over a WetGround on gold, in dark/light/screen modes.
+  The lib's `WordInfo`, `WordFx` and helpers are the same, so `lyricFx.ts` keeps working.
 
 ### Overlay (already global — scenes never draw it)
 `<Letterbox/>` (138 px bars). No captions: see `<WorldLyric>`.

@@ -6,7 +6,9 @@
  *
  *   <HouseCube size?={8 (≥ 7.6)} time?={0} color?={GREYS.g3} ambient?={0.06}
  *     doorOpen?={0}               0..1 door slab slides aside into the wall on the +X side (light beyond if `interior` > 0)
- *     doorIris?={{…IrisProps}|false}   props for the iris lock on the right door jamb face (radius 0.16; time = `time`)
+ *     doorIris?={{…IrisProps}|false}   props for the iris lock on the right door jamb face (radius 0.16 at
+ *                                 HOUSE_SPOTS.doorIris; time = `time`). `position` (house-local) / `radius` override
+ *                                 them; the red spill light follows the iris position
  *     irisLight?={1}              faint red spill of the iris on the step/jamb (0 = off)
  *     warmWindow?={0}             0..1+ dawnGold glow in the LEFT window + gold spill on the ground (Final/Outro ONLY)
  *     windowGlow?={0}             0..1 bone screen-glow inside both windows (V2Rain: lit from the street screens)
@@ -24,6 +26,8 @@
  * Origin: base centre on the ground (y = 0), front face toward +Z at z = size/2. Anchors: HOUSE_SPOTS / houseSpots(size)
  * and HOUSE_CAMERAS. Lights: one red point light (iris spill) + one dawnGold point light (warm window spill) — the
  * count is constant; intensities follow the props.
+ * Roof: a parapet lip runs round the top 0.5 m (from y = size − 0.5, i.e. 7.5 for the 8 m cube) and stands 8 cm proud
+ * of every face, so text or decals on the facade plane above ~size − 0.6 (7.4 m) are hidden behind it.
  */
 import React, {useLayoutEffect, useMemo} from 'react';
 import * as THREE from 'three';
@@ -111,6 +115,15 @@ export const HOUSE_CAMERAS = {
 
 const PLANE = new THREE.PlaneGeometry(1, 1);
 const UNIT = new THREE.BoxGeometry(1, 1, 1);
+
+/** an R3F position prop ([x, y, z], Vector3 or a scalar) as a tuple; null when not given */
+const toV3 = (p: GroupProps['position']): V3 | null => {
+  if (p === undefined || p === null) return null;
+  if (typeof p === 'number') return [p, p, p];
+  if (p instanceof THREE.Vector3) return [p.x, p.y, p.z];
+  const a = p as ArrayLike<number>;
+  return [a[0], a[1], a[2]];
+};
 
 /** Interior room behind the LEFT (climb) window: x range, height, depth behind the 0.2 m front skin. */
 const ROOM_X0 = -WIN_X - 1.5, ROOM_X1 = -WIN_X + 1.5, ROOM_H = 3.0, ROOM_D = 3.6, SKIN = 0.2;
@@ -212,6 +225,13 @@ export const HouseCube: React.FC<HouseCubeProps> = ({
   useLayoutEffect(() => () => stMat?.dispose(), [stMat]);
   const segs = useMemo(() => cageSegments(spots.cage.half, spots.cage.height, laserCage), [spots, laserCage]);
   const irisOn = doorIris !== false;
+  // the iris lock sits at spots.doorIris unless doorIris.position moves it (house-local); its red spill light follows it,
+  // at the default stand-off (0.596 m out along +Z)
+  const irisMoved = doorIris ? toV3(doorIris.position) : null;
+  const irisPos: V3 = irisMoved ?? spots.doorIris;
+  const irisLightPos: V3 = irisMoved
+    ? [irisMoved[0], irisMoved[1], irisMoved[2] + (f + 0.6 - spots.doorIris[2])]
+    : [spots.doorIris[0], spots.doorIris[1], f + 0.6];
   // slides toward +X into the solid wall between the door and the right window (−X is the carved climb room)
   const slide = clamp01(doorOpen) * (DOOR_W + 0.05);
   const ww = Math.max(0, warmWindow);
@@ -268,9 +288,9 @@ export const HouseCube: React.FC<HouseCubeProps> = ({
       {st && stMat ? (
         <mesh geometry={PLANE} material={stMat} position={[0, STEP_H + DOOR_H + 0.55, f + 0.004]} scale={[Math.min(size * 0.7, 0.22 * st.aspect), 0.22, 1]} />
       ) : null}
-      {/* iris lock on the right jamb face */}
-      {irisOn ? <Iris radius={0.16} time={time} {...(doorIris || {})} position={spots.doorIris} /> : null}
-      <pointLight position={[spots.doorIris[0], spots.doorIris[1], f + 0.6]} color={S.authRed} intensity={irisOn ? 0.5 * irisLight : 0} distance={3} decay={2} />
+      {/* iris lock on the right jamb face (doorIris.position moves it; the red spill light follows it) */}
+      {irisOn ? <Iris radius={0.16} time={time} {...(doorIris || {})} position={irisPos} /> : null}
+      <pointLight position={irisLightPos} color={S.authRed} intensity={irisOn ? 0.5 * irisLight : 0} distance={3} decay={2} />
       <pointLight position={[-WIN_X, SILL + WIN_H / 2, f + 1.2]} color={S.dawnGold} intensity={2.2 * ww} distance={6} decay={2} />
       {/* laser cage (Chorus1) */}
       {segs.length ? (

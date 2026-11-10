@@ -1,11 +1,12 @@
 /**
- * HOLD — one take (scene-local 0–314, song 155.93–166.40). Lines [36] and [37].
+ * HOLD — one take (scene-local 0–314, song 155.93–166.40). Lines [36] and [37] (+ the tail word "had." of [35]).
  *
  * A black ocean to the horizon under a band of lit fog. Over the sea hangs a pillow the size of a building: a black
  * eclipse against the haze, a thin red seam across it (TENURE's eye, closed). The hold music is VISIBLE: thin red
  * waveform traces ripple through the air at every depth, shaped by the song's spectrum, mirrored by the swell. He stands
  * on the water, small, dead centre, his back to us, phone at his ear, grandpa's hammer hanging from his right hand.
  * The camera pushes in and zooms down the axis (man → eye) from the first frame and settles at 162.0.
+ *   [35] tail: "HAD." (sung across the cut, to 156.20) lies dim on the carrier trace, alone, until "THEN" arrives.
  *   [36] "THEN THE HOLD MUSIC" rides the nearest trace word by word. The music decays and the traces flatten; on
  *        "stopped" (157.80) EVERY light cuts out except the pillow's red seam and its broken reflection. In the black,
  *        "STOPPED, AND THE VOICE CAME THROUGH," stands where the music was, dim; on "voice" the seam crackles.
@@ -20,6 +21,7 @@ import {S, GREYS, cameraFovForVisible} from '../../lib/palette';
 import {CameraRig} from '../../lib/SilStage';
 import {Backlight, FogLayers} from '../../lib/atmos';
 import {beatAt, lerp} from '../../../lib/time';
+import type {WordFx} from '../../lib/WorldLyric';
 import {BlackSea} from './BlackSea';
 import {HoldWaves, Trace, holdBands, holdLoud, waveY, waveSlope} from './HoldWaves';
 import {HoldGuy, PillowEye, LyricRows, PILLOW_POS, PILLOW_W, PILLOW_H, pitchTarget, pxToM, V3} from './common';
@@ -70,6 +72,23 @@ export const ShotHold: React.FC<{t: number; f: number}> = ({t, f}) => {
   const em37 = pxToM(42, 25 - TEXT_POS[2], cameraFovForVisible(VIS1));
   const lift36 = 0.35 * em36 + 0.16 * em36;
   const lift37 = 0.35 * em37 + 0.16 * em37;
+  // the tail of [35], "HAD." (sung 155.80–156.20, across the cut): a touch smaller and dim (em ≈ 41 px, cap ≈ 29 px)
+  const emHad = em36 * 0.9;
+  const liftHad = 0.35 * emHad + 0.16 * emHad;
+  /**
+   * a word riding the carrier trace: bobbing with the wave at its centre `xc`, tilted with the slope. With `halfW` the
+   * word also clears a crest under its ends: its tilted baseline keeps the centre's clearance + `clear` (m) along its width.
+   */
+  const ride = (xc: number, lift: number, halfW = 0, clear = 0): WordFx => {
+    const rot = Math.max(-0.22, Math.min(0.22, Math.atan(waveSlope(CARRIER, xc, t, bands, level)) * 0.8));
+    let y = waveY(CARRIER, xc, t, bands, level);
+    if (halfW > 0) {
+      for (const k of [-1, -0.5, 0.5, 1]) {
+        y = Math.max(y, waveY(CARRIER, xc + k * halfW, t, bands, level) - k * halfW * Math.tan(rot) + clear);
+      }
+    }
+    return {offset: [0, y + lift, 0], rotation: [0, 0, rot]};
+  };
   // the narration lands while the camera is still settling (~0.9x scale at 160.24): a touch larger so it never drops
   // under ~27 px cap; the question stays small (cap ≈ 29 px at the locked framing)
   const em37n = em37 * (44 / 42);
@@ -119,15 +138,18 @@ export const ShotHold: React.FC<{t: number; f: number}> = ({t, f}) => {
       <group position={TEXT_POS}>
         {t < T.the37 ? (
           on ? (
-            // [36] "THEN THE HOLD MUSIC" rides the carrier trace (it dies with the light)
-            <LyricRows line={L.hold} time={t} rows={[[0, 1, 2, 3]]} size={em36} mode="light" intensity={1.0} halo={0.28}
-              fx={(_i, _info, s) => {
-                const xc = s.x + s.w / 2;
-                return {
-                  offset: [0, waveY(CARRIER, xc, t, bands, level) + lift36, 0],
-                  rotation: [0, 0, Math.max(-0.22, Math.min(0.22, Math.atan(waveSlope(CARRIER, xc, t, bands, level)) * 0.8))],
-                };
-              }} />
+            <>
+              {/* the tail of [35] (Cancel's line): only "HAD." is still sung after the cut (to 156.20). Cancel showed the
+                  rest of the line, so it is not repeated: the one word lies quietly on the carrier, dim bone, centred
+                  where [36] is about to appear, and goes as "THEN" arrives */}
+              {t < T.then ? (
+                <LyricRows line={L.had} time={t} rows={[[8]]} size={emHad} mode="light" intensity={0.6} halo={0.14}
+                  until={T.then} fx={(_i, _info, s) => ride(s.x + s.w / 2, liftHad, s.w / 2, 0.12 * emHad)} />
+              ) : null}
+              {/* [36] "THEN THE HOLD MUSIC" rides the carrier trace (it dies with the light) */}
+              <LyricRows line={L.hold} time={t} rows={[[0, 1, 2, 3]]} size={em36} mode="light" intensity={1.0} halo={0.28}
+                fx={(_i, _info, s) => ride(s.x + s.w / 2, lift36)} />
+            </>
           ) : null
         ) : (
           <>

@@ -54,7 +54,7 @@ export const ShotThermal: React.FC<{t: number; abs: number}> = ({t, abs}) => {
     <SilStage fog={{color: GREYS.g3, near: 40, far: 650}} camera={{far: 2500}}>
       <CameraRig position={[0, 1.36, camZ]} target={[0, 1.22, 0]} fov={FOV} />
       <Highway time={t} scroll={scroll} zNear={24} zFar={-900} gantries={false} pulse={bass} horizon={0.66} horizonY={6} horizonH={60} wet={{reflectivity: 0.6, puddles: 0.2, streak: 1.6}} sky={0.09} />
-      <Capsule time={t} seatGlow={0.16 + 0.84 * cold} frost={frost} readout={readout * (1 + 0.35 * tierFlash)} cabinGlow={0.4} headlights={1}
+      <Capsule time={t} seatGlow={0.16 + 0.84 * cold} frost={frost} readout={readout * (1 + 0.2 * tierFlash)} cabinGlow={0.4} headlights={1}
         rim={{color: S.bone, strength: 0.7, power: 6, dir: [0, 1]}}>
         <SilGuy position={CAPSULE.seatRoot} pose={pose} />
         {/* frost crystals hanging in the cold light of the cabin */}
@@ -64,7 +64,7 @@ export const ShotThermal: React.FC<{t: number; abs: number}> = ({t, abs}) => {
         ) : null}
       </Capsule>
       <WorldLyric line={20} time={t} mode="light" size={em} maxWidth={em * 18} position={[0, TEXT_Y, TEXT_Z - scroll]}
-        intensity={1.05} halo={0.4} until={TCUT.governor + 0.05} />
+        intensity={1.05} halo={0.4} until={TCUT.governor + 0.05} redFill={0.7} />
     </SilStage>
   );
 };

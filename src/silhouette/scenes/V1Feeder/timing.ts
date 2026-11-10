@@ -81,6 +81,7 @@ const lastDown = (t: number) => {
   return ans;
 };
 
-/** the book's loss: most of the page goes on "took it back once", the last words leave on "take it away" */
+/** the book's loss: most of the page goes on "took it back once", the last words leave on "and they can take", so the page
+ *  he holds up is blank from "take it" through "away" to the cut (VENT `lift`) */
 export const bookLoss = (t: number) =>
-  0.7 * lin(t, W.took - 0.12, W.once + 0.35) + 0.3 * lin(t, W.once + 0.35, W.away + 0.15);
+  0.7 * lin(t, W.took - 0.12, W.once + 0.35) + 0.3 * lin(t, W.once + 0.35, W.take + 0.3);

@@ -10,20 +10,30 @@
 import React, {useMemo} from 'react';
 import {SilStage, CameraRig} from '../../lib/SilStage';
 import {SilGuy} from '../../lib/SilCast';
-import {WorldLyric} from '../../lib/WorldLyric';
+import {WorldLyric, measureLyric} from '../../lib/WorldLyric';
 import {S, GREYS, SFONTS, cameraFovForVisible} from '../../lib/palette';
 import {Backlight, FogLayers} from '../../lib/atmos';
 import {bassAt, clamp01, lerp} from '../../../lib/time';
 import {guyIdle, mergePose} from '../../../lib/characters/Guy';
 import {Highway} from './Highway';
-import {PatentProjection, SHEET} from './Patent';
-import {placeWords} from './lyric';
+import {claimLabelRight, PatentProjection, SHEET} from './Patent';
 import {TCUT, T_END, W} from './timing';
 
 const FOV = cameraFovForVisible(20);
 const SZ = -95; // the fog wall / sheet
 const SY = 12.2; // sheet centre height (its foot just above the road)
 const GUY_Z = -30;
+/** the claim rows: FORD FILED A PATENT / FOR THAT, BY THE — "way." (110.00) is sung after the cut, on V2Rain's screen */
+const ROWS = [[0, 1, 2, 3], [4, 5, 6, 7]];
+const MONO = {font: SFONTS.mono, weight: 500, tracking: 0.12, lineHeight: 1.18};
+/** where the claim rows start and their size, measured in the installed mono font (the final render's Andale Mono
+ *  differs from the fallback): right of the CLAIM labels, the widest row at most 85% of the room to the margin */
+const claimLayout = () => {
+  const C = SHEET.claim;
+  const x0 = Math.max(C.x0, claimLabelRight() + 1.0);
+  const w1 = Math.max(...measureLyric(23, 1, undefined, {...MONO, rows: ROWS}).rowWidths);
+  return {x0, em: Math.min(C.em, (0.85 * (C.xMax - x0)) / w1)};
+};
 const smooth = (x: number) => {
   const c = clamp01(x);
   return c * c * (3 - 2 * c);
@@ -33,11 +43,7 @@ export const ShotPatent: React.FC<{t: number; abs: number}> = ({t, abs}) => {
   const bass = bassAt(abs);
   const u = clamp01((t - TCUT.patent) / (T_END - TCUT.patent));
   const on = smooth((t - (W.ford - 0.08)) / 0.32);
-  const C = SHEET.claim;
-  const perWord = useMemo(() => placeWords(23, C.em, [
-    {words: [0, 1, 2, 3], x: -22, y: C.row0, align: 'left'},
-    {words: [4, 5, 6, 7, 8], x: -22, y: C.row1, align: 'left'},
-  ], {font: SFONTS.mono}), [C.em, C.row0, C.row1]);
+  const claim = useMemo(claimLayout, []);
   const camZ = lerp(0, -2.6, smooth(u));
   const pose = mergePose(guyIdle(t, 5), {headPitch: -0.22 * smooth((t - W.ford) / 0.8), headYaw: 0});
   return (
@@ -53,8 +59,9 @@ export const ShotPatent: React.FC<{t: number; abs: number}> = ({t, abs}) => {
         time={t} drift={[0.25, 0.02]} seed={3} />
       <PatentProjection time={t} on={on * (1 + 0.06 * bass)} position={[0, SY, SZ]} />
       {on > 0.01 ? (
-        <WorldLyric line={23} time={t} mode="light" font={SFONTS.mono} weight={500} size={C.em} position={[0, SY, SZ + 0.05]}
-          perWord={perWord} intensity={0.98 * on} halo={0.3} tracking={0.12} until={T_END + 0.5} />
+        <WorldLyric line={23} time={t} mode="light" {...MONO} size={claim.em} rows={ROWS} align="left" anchor="baseline"
+          position={[claim.x0, SY + SHEET.claim.row0, SZ + 0.05]} intensity={0.98 * on} halo={0.3} until={T_END + 0.5}
+          redFill={0.85} />
       ) : null}
       <SilGuy position={[0, 0, GUY_Z]} rotation-y={Math.PI} pose={pose} rim={{color: S.bone, strength: 0.6, power: 7, dir: [0, 1]}} />
     </SilStage>

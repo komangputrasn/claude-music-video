@@ -6,7 +6,7 @@ import React from 'react';
 import {S, cameraFovForVisible} from '../../../lib/palette';
 import {SilStage, CameraRig} from '../../../lib/SilStage';
 import {SilGuy, SilPancake} from '../../../lib/SilCast';
-import {FinalLyric} from '../FinalLyric';
+import {WorldLyric, measureLyric} from '../../../lib/WorldLyric';
 import {Backlight, LightPool, Motes, WetGround} from '../../../lib/atmos';
 import {PlainBowl} from '../../../lib/props';
 import {guyIdle} from '../../../../lib/characters/Guy';
@@ -16,10 +16,17 @@ import {DawnSky, fogAt, goldRim} from '../Dawn';
 import {Skyline, CITY_DARK} from '../City';
 import {dyingRed} from '../lyricFx';
 import {dawn, easeOut} from '../timing';
-import {pitchTarget, pxToM, screenPoint, V3} from '../frame';
+import {fitEm, halfWidthAt, pitchTarget, pxToM, screenPoint, V3} from '../frame';
 
 const VIS = 17;
 const deg = Math.PI / 180;
+/** explicit rows (font-independent) */
+const ROWS: Record<number, number[][]> = {
+  42: [[0, 1], [2, 3], [4, 5, 6], [7, 8]], // YOU SAID / BUY NOW, / BUT I'M GOOD / FOR NOW, (as S1; clear of the sun)
+  43: [[0, 1], [2, 3], [4, 5, 6], [7, 8, 9]], // AND PANCAKE / EATS BREAKFAST / FROM A BOWL / ON THE GROUND.
+  44: [[0, 1, 2], [3, 4], [5]], // I'M DONE WITH / UPGRADE TO / CONTINUE,
+};
+const LX = -0.5; // block centre, visible-picture x
 
 export const Bowl: React.FC<{t: number; f: number; u: number}> = ({t, f, u}) => {
   const k = dawn(t);
@@ -35,8 +42,9 @@ export const Bowl: React.FC<{t: number; f: number; u: number}> = ({t, f, u}) => 
   const midCam: V3 = [-0.25, 0.3, 5.3];
   const lz = -9;
   const ld = midCam[2] - lz;
-  const em = pxToM(54, ld, VIS);
-  const lx = screenPoint(midCam, pitchTarget(midCam, 1.2), VIS, -0.5, 0, ld)[0];
+  const wide = Math.max(...[42, 43, 44].map((l) => measureLyric(l, 1, undefined, {rows: ROWS[l]}).width));
+  const em = fitEm(pxToM(54, ld, VIS), wide, 2 * (0.94 - Math.abs(LX)) * halfWidthAt(ld, VIS));
+  const lx = screenPoint(midCam, pitchTarget(midCam, 1.2), VIS, LX, 0, ld)[0];
   const sunX = (D + cam[2]) * Math.tan(-3.0 * deg);
   return (
     <SilStage fog={{color: fogAt(t), near: 60, far: 2600}} camera={{far: 4000, near: 0.15}}>
@@ -50,7 +58,7 @@ export const Bowl: React.FC<{t: number; f: number; u: number}> = ({t, f, u}) => 
       <LightPool position={bowlW} radius={0.9} color={S.dawnGold} intensity={0.55 * k} haze={0.22} hazeHeight={1.6} />
       <Motes count={220} area={[2.6, 1.4, 1.8]} position={[bowlW[0], 0, -0.4]} time={t} color={S.dawnGold} size={0.007} intensity={0.7} drift={[0.02, 0.03, 0]} />
       {[42, 43, 44].map((line) => (
-        <FinalLyric key={line} line={line} time={t} mode="dark" size={em} maxWidth={em * 9.5} anchor="bottom" halo={1.3} goldGlow={1.4}
+        <WorldLyric redFill={1} key={line} line={line} rows={ROWS[line]} time={t} mode="dark" size={em} anchor="bottom" halo={1.3} goldGlow={1.4}
           position={[lx, 0.02, lz]} perWord={dyingRed(t, {size: em, dir: 1, seed: line + 13})} />
       ))}
       <group position={dog} rotation-y={-Math.PI / 2}>

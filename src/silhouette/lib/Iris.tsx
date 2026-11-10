@@ -14,7 +14,9 @@
  *   time       seconds; drives the slow aperture-blade rotation and the scan sweep (pass song time).
  *   housing    draw the black lens housing disc behind the rings (needed on bright backgrounds).
  *   flicker    0..1 failure flicker (Final scene: the red screens fail). Deterministic from `time`.
- *   glint      small bone-white specular dot in the pupil (makes it read as an eye/lens).
+ *   glint      small bone-white specular dot in the pupil (makes it read as an eye/lens). It fades out with `intensity`
+ *              below 1 (full at >= 1, gone at 0), so an iris dimmed to intensity 0 is a plain black housing disc
+ *              without passing glint={false}. It also needs `open` > ~0.3.
  *   glow       0..1 pure-red additive halo around the disc (default 0.45). The red rings are soft-capped inside
  *              irisLayers so they never tone-map orange; brightness/presence comes from this halo + haze, not HDR.
  *
@@ -146,8 +148,10 @@ export const makeIrisMaterial = (o: IrisOpts = {}) => {
 
 export const setIrisUniforms = (m: THREE.ShaderMaterial, o: IrisOpts) => {
   const u = m.uniforms;
-  u.uColor.value.set(o.color ?? S.authRed).multiplyScalar(o.intensity ?? 1.5);
-  u.uGlint.value.set(S.bone).multiplyScalar(o.glint === false ? 0 : 1.4);
+  const intensity = o.intensity ?? 1.5;
+  u.uColor.value.set(o.color ?? S.authRed).multiplyScalar(intensity);
+  // the glint dies with the iris: full at intensity >= 1, fading to nothing at 0 (a dead iris is a plain black disc)
+  u.uGlint.value.set(S.bone).multiplyScalar(o.glint === false ? 0 : 1.4 * Math.min(1, Math.max(0, intensity)));
   u.uOpen.value = o.open ?? 1;
   u.uPupil.value = o.pupil ?? 0.32;
   u.uTime.value = o.time ?? 0;

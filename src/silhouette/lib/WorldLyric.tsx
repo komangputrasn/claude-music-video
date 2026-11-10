@@ -6,11 +6,12 @@
  * declined) are authRed and flash on their onset; in the final chorus good/own/paper/bowl/ground are dawnGold.
  *
  *   <WorldLyric line={12} time={songT} size?={0.5} mode?='light'|'screen'|'paint'|'dark' maxWidth?={8}
- *               align?='center'|'left'|'right' anchor?='center'|'top'|'bottom' color?={S.bone} intensity?={1.1}
+ *               align?='center'|'left'|'right' anchor?='center'|'top'|'bottom'|'baseline' color?={S.bone} intensity?={1.1}
  *               from? until? reveal?='word'|'line' halo?={0.35} fog? opacity? flicker? perWord? font?
- *               lineHeight?={1.18} tracking?={0.15} {...group}/>
+ *               lineHeight?={1.18} tracking?={0.15}
+ *               rows? rowScale? verbatim?={false} glow? redFill?={0} goldGlow?={1} mirror?={true} {...group}/>
  *
- *   line       lyric line index (src/data/lyrics.json / DESIGN.md §6). Or pass `text` + `words` for non-sung text.
+ *   line       lyric line index (src/data/lyrics.json / DESIGN.md §6). Or pass `text` for non-sung text.
  *   time       song seconds (useSongTime()).
  *   size       font size (em) in METRES. Cap height ≈ 0.7·size. Use metresForPx() to size for legibility:
  *              keep the cap height ≥ ~26 px on the 1080 frame (em ≥ ~38 px) — 50–90 px reads comfortably.
@@ -19,21 +20,48 @@
  *              'paint'  matte paint/print on a surface (receives fog, never blooms: stencils, the paper page)
  *              'dark'   black letters standing as silhouettes against a bright background (fog, no glow);
  *                       control/gold words stay black but get a glow of their colour behind them
- *   maxWidth   wrap width in metres (balanced rows). Omit = one row.
+ *   maxWidth   wrap width in metres (balanced rows). Omit = one row. Ignored when `rows` is given.
+ *   anchor     where the origin sits on the block: 'center' | 'top' (cap line of row 0) | 'bottom' (baseline of the
+ *              last row) | 'baseline' (baseline of row 0).
  *   from/until visibility window in song seconds. Default: from the first sung word until the next line's first word
  *              (or line end + 1.2 s). Words still appear one at a time inside the window (reveal 'word').
- *   reveal     'word' (default) or 'line' (the whole line at once at its first word).
+ *   reveal     'word' (default) or 'line' (the whole line at once at the line's first sung word).
  *   perWord    (i, info) => ({offset?:[x,y,z], rotation?:[x,y,z], scale?, opacity?, visible?}) per-word animation hook
- *              (e.g. words drifting off as ash, letters falling). info = {text, start, since, row, x, y, width}.
+ *              (e.g. words drifting off as ash, letters falling). i = the word's index in the line (or in `text`);
+ *              info = {text, start, since, row, col, x, y, width, rowX, rowWidth, rowStart} (x, y = the word's left
+ *              baseline point in the block; rowX/rowWidth = its row's left edge/width; rowStart = onset of the row's
+ *              first word).
  *   flicker    0..1 deterministic failing-light flicker (Final: red text dying).
+ *   --- opt-in extras (defaults reproduce the plain behaviour above exactly) ---
+ *   rows       explicit line breaks: word indices per row, e.g. [[0, 1, 2], [3, 4]]. Words not listed are hidden (not
+ *              laid out). Same spacing/align/anchor/lineHeight/baseline convention as the balanced wrap; a row that
+ *              lists the same words as the wrap renders identically. Split one line across several <WorldLyric>s (each
+ *              listing a subset) to flank a door, a dial… Timing is untouched (each word still appears when sung).
+ *   rowScale   with `rows`: size multiplier per row (default 1), e.g. [1, 1, 2.1]. Row pitch = lineHeight·size·max(the two
+ *              rows' scales); anchor 'top'/'baseline' use row 0's scaled cap height.
+ *   verbatim   custom `text` is drawn exactly as given (case and every character kept: "03:15", "$4.99 / NIGHT").
+ *              Default false = displayWord() (upper-cased, quotes/commas/periods/semicolons/colons stripped). Ignored
+ *              for sung `line`s.
+ *   glow       (i, info) => 0..1 colour of a control/free (red/gold) word; called for those words only. 1 = full colour,
+ *              in between = the flash/glow multiplier scaled down, 0 = the word loses its colour (dark: a plain black
+ *              letter; light/screen/paint: falls back to the base colour) but stays visible. Final: the last red dies.
+ *   redFill    'light'/'dark' modes: > 0 draws control (authRed) words as SOLID authRed letters (normal blending,
+ *              brightness redFill (×0.8 in dark), only a faint red halo) instead of additive red light / a red glow
+ *              behind a black letter. Use on gold/bright haze, where additive red tone-maps ORANGE. 0 (default) = off.
+ *   goldGlow   'dark' mode: multiplier on the gold glow behind gold words (default 1 = capped at 2× gold; > 1 burns
+ *              hotter on a bright gold sky).
+ *   mirror     false = the words are invisible to every camera other than the scene's default camera (WetGround's
+ *              reflection, render targets): for text high in the sky whose mirror image would land somewhere unrelated.
  * Origin: the anchor point of the text block; text faces +Z, reads left→right along +X.
  *
  * Also exported: sceneLyricLines(t0, t1) (the lines a scene must stage), lyricWindow(i), lyricWordColor(),
- * metresForPx(px, distance, fovDeg), measureLyric(i|text, size, maxWidth) → {width, height, rows}.
+ * metresForPx(px, distance, fovDeg), measureLyric(i|text, size, maxWidth, {rows, rowScale, verbatim, …}) →
+ * {width, height, rows, rowWidths, rowWords} (rowWords = the balanced wrap's word indices per row).
  * Deterministic; glyph textures are cached per word (drawn once, synchronously, with system fonts).
  */
 import React, {useLayoutEffect, useMemo} from 'react';
 import * as THREE from 'three';
+import {useThree} from '@react-three/fiber';
 import {LINES} from '../../lib/lyrics';
 import {S, SFONTS, RED_WORDS, GOLD_WORDS} from './palette';
 
@@ -122,63 +150,104 @@ const getGlyph = (text: string, font: string, weight: number, tracking: number):
 };
 
 // ------------------------------------------------------------------------------------------------ layout
-type LaidWord = {text: string; raw: string; start: number; row: number; x: number; y: number; width: number; glyph: Glyph};
+export type LyricAlign = 'center' | 'left' | 'right';
+export type LyricAnchor = 'center' | 'top' | 'bottom' | 'baseline';
+type Item = {text: string; raw: string; start: number; idx: number; glyph: Glyph; adv: number};
+type LaidWord = {
+  text: string; raw: string; start: number; idx: number; row: number; col: number; x: number; y: number; width: number;
+  /** em size of the word's row (size × rowScale) */
+  size: number; rowX: number; rowWidth: number; rowStart: number; glyph: Glyph;
+};
+type LayoutOpts = {rows?: number[][]; rowScale?: number[]; verbatim?: boolean};
 
 const layout = (
-  words: {text: string; start: number}[], size: number, maxWidth: number | undefined, align: 'center' | 'left' | 'right',
-  anchor: 'center' | 'top' | 'bottom', lineHeight: number, font: string, weight: number, tracking: number,
+  words: {text: string; start: number}[], size: number, maxWidth: number | undefined, align: LyricAlign,
+  anchor: LyricAnchor, lineHeight: number, font: string, weight: number, tracking: number, opts: LayoutOpts = {},
 ) => {
   const space = 0.42; // em
-  const items = words.map((w) => {
-    const text = displayWord(w.text);
+  const mkItem = (w: {text: string; start: number}, idx: number): Item => {
+    const text = opts.verbatim ? w.text : displayWord(w.text);
     const glyph = getGlyph(text, font, weight, tracking);
-    return {text, raw: w.text, start: w.start, glyph, adv: glyph.adv};
-  });
-  const total = items.reduce((a, it, i) => a + it.adv + (i ? space : 0), 0);
-  const maxEm = maxWidth ? maxWidth / size : Infinity;
-  const nRows = Math.max(1, Math.ceil(total / maxEm));
-  const target = total / nRows;
-  // balanced greedy wrap: aim for equal rows of ~total/nRows, never wider than maxWidth
-  const limit = Math.min(maxEm, target * 1.08);
-  const rows: (typeof items)[] = [[]];
-  let cur = 0;
-  for (const it of items) {
-    const row = rows[rows.length - 1];
-    const add = (row.length ? space : 0) + it.adv;
-    if (row.length && cur + add > limit) {
-      rows.push([it]);
-      cur = it.adv;
-    } else {
-      row.push(it);
-      cur += add;
+    return {text, raw: w.text, start: w.start, idx, glyph, adv: glyph.adv};
+  };
+  let rows: Item[][];
+  if (opts.rows) {
+    // explicit rows: word indices per row; unlisted words are not laid out (hidden)
+    rows = opts.rows.map((r) => r.filter((i) => Number.isInteger(i) && i >= 0 && i < words.length).map((i) => mkItem(words[i], i)));
+    if (!rows.length) rows = [[]];
+  } else {
+    const items = words.map((w, i) => mkItem(w, i));
+    const total = items.reduce((a, it, i) => a + it.adv + (i ? space : 0), 0);
+    const maxEm = maxWidth ? maxWidth / size : Infinity;
+    const nRows = Math.max(1, Math.ceil(total / maxEm));
+    const target = total / nRows;
+    // balanced greedy wrap: aim for equal rows of ~total/nRows, never wider than maxWidth
+    const limit = Math.min(maxEm, target * 1.08);
+    rows = [[]];
+    let cur = 0;
+    for (const it of items) {
+      const row = rows[rows.length - 1];
+      const add = (row.length ? space : 0) + it.adv;
+      if (row.length && cur + add > limit) {
+        rows.push([it]);
+        cur = it.adv;
+      } else {
+        row.push(it);
+        cur += add;
+      }
     }
   }
+  const scaled = !!(opts.rows && opts.rowScale);
+  const sc = (ri: number) => (scaled ? opts.rowScale![ri] ?? 1 : 1);
   const rowW = rows.map((r) => r.reduce((a, it, i) => a + it.adv + (i ? space : 0), 0));
-  const width = Math.max(...rowW) * size;
+  const width = Math.max(...rowW.map((w, ri) => w * sc(ri))) * size;
   const capH = 0.7;
-  const height = ((rows.length - 1) * lineHeight + capH) * size;
+  // baseline drop (em) of each row below row 0 when rows are scaled: pitch = lineHeight × the larger of the two scales
+  const drop: number[] = [];
+  rows.forEach((_, ri) => drop.push(ri ? drop[ri - 1] + lineHeight * Math.max(sc(ri - 1), sc(ri)) : 0));
+  const cap0 = scaled ? capH * sc(0) * size : capH * size;
+  const height = scaled ? drop[rows.length - 1] * size + cap0 : ((rows.length - 1) * lineHeight + capH) * size;
   // baseline of row 0 relative to the anchor
-  const top = anchor === 'top' ? 0 : anchor === 'bottom' ? height : height / 2;
+  const top = anchor === 'top' ? 0 : anchor === 'bottom' ? height : anchor === 'baseline' ? cap0 : height / 2;
   const laid: LaidWord[] = [];
   rows.forEach((r, ri) => {
-    let x = align === 'left' ? 0 : align === 'right' ? -rowW[ri] * size : (-rowW[ri] * size) / 2;
-    const y = top - capH * size - ri * lineHeight * size;
+    const sz = size * sc(ri);
+    let x = align === 'left' ? 0 : align === 'right' ? -rowW[ri] * sz : (-rowW[ri] * sz) / 2;
+    const y = scaled ? top - cap0 - drop[ri] * size : top - capH * size - ri * lineHeight * size;
+    const rowX = x;
+    const rowWidth = rowW[ri] * sz;
+    const rowStart = r[0]?.start ?? -Infinity;
     r.forEach((it, wi) => {
-      if (wi) x += space * size;
-      laid.push({text: it.text, raw: it.raw, start: it.start, row: ri, x, y, width: it.adv * size, glyph: it.glyph});
-      x += it.adv * size;
+      if (wi) x += space * sz;
+      laid.push({
+        text: it.text, raw: it.raw, start: it.start, idx: it.idx, row: ri, col: wi, x, y, width: it.adv * sz, size: sz, rowX,
+        rowWidth, rowStart, glyph: it.glyph,
+      });
+      x += it.adv * sz;
     });
   });
-  return {laid, width, height, rows: rows.length};
+  return {
+    laid, width, height, rows: rows.length, rowWidths: rowW.map((w, ri) => w * sc(ri) * size),
+    rowWords: rows.map((r) => r.map((it) => it.idx)),
+  };
 };
 
-/** Measure a lyric line (or any text) as it would be laid out. */
-export const measureLyric = (lineOrText: number | string, size = 1, maxWidth?: number, opts: {font?: string; weight?: number; tracking?: number; lineHeight?: number} = {}) => {
-  const words = typeof lineOrText === 'number'
-    ? LINES[lineOrText].words.map((w) => ({text: w.text, start: w.start}))
-    : lineOrText.split(/\s+/).filter(Boolean).map((text) => ({text, start: 0}));
-  const r = layout(words, size, maxWidth, 'center', 'center', opts.lineHeight ?? 1.18, opts.font ?? SFONTS.futura, opts.weight ?? 500, opts.tracking ?? 0.15);
-  return {width: r.width, height: r.height, rows: r.rows};
+const textWords = (text: string, start: number) => text.split(/\s+/).filter(Boolean).map((t) => ({text: t, start}));
+
+/**
+ * Measure a lyric line (or any text) as it would be laid out (same options as the component). Returns the block
+ * {width, height} (m), the row count, each row's width (m) and `rowWords` (word indices per row: the balanced wrap's
+ * breaks, ready to edit and pass back as `rows`).
+ */
+export const measureLyric = (
+  lineOrText: number | string, size = 1, maxWidth?: number,
+  opts: {font?: string; weight?: number; tracking?: number; lineHeight?: number; rows?: number[][]; rowScale?: number[]; verbatim?: boolean} = {},
+) => {
+  const isLine = typeof lineOrText === 'number';
+  const words = isLine ? LINES[lineOrText].words.map((w) => ({text: w.text, start: w.start})) : textWords(lineOrText, 0);
+  const r = layout(words, size, maxWidth, 'center', 'center', opts.lineHeight ?? 1.18, opts.font ?? SFONTS.futura, opts.weight ?? 500,
+    opts.tracking ?? 0.15, {rows: opts.rows, rowScale: opts.rowScale, verbatim: !isLine && !!opts.verbatim});
+  return {width: r.width, height: r.height, rows: r.rows, rowWidths: r.rowWidths, rowWords: r.rowWords};
 };
 
 // ------------------------------------------------------------------------------------------------ component
@@ -189,6 +258,15 @@ const fh = (n: number) => {
 };
 
 export type WordInfo = {text: string; start: number; since: number; row: number; x: number; y: number; width: number};
+/** What perWord / glow actually receive: WordInfo + the word's row slot (a callback typed with plain WordInfo still fits). */
+export type RowWordInfo = WordInfo & {
+  /** position of the word in its row (0 = first) */
+  col: number;
+  /** left edge (m) and width (m) of the word's row, in the block's local space */
+  rowX: number; rowWidth: number;
+  /** onset (song s) of the row's first word (-Infinity for custom text) */
+  rowStart: number;
+};
 export type WordFx = {offset?: [number, number, number]; rotation?: [number, number, number]; scale?: number; opacity?: number; visible?: boolean};
 
 export type WorldLyricProps = {
@@ -199,8 +277,8 @@ export type WorldLyricProps = {
   size?: number;
   mode?: 'light' | 'screen' | 'paint' | 'dark';
   maxWidth?: number;
-  align?: 'center' | 'left' | 'right';
-  anchor?: 'center' | 'top' | 'bottom';
+  align?: LyricAlign;
+  anchor?: LyricAnchor;
   color?: string;
   intensity?: number;
   from?: number;
@@ -210,27 +288,55 @@ export type WorldLyricProps = {
   fog?: boolean;
   opacity?: number;
   flicker?: number;
-  perWord?: (i: number, info: WordInfo) => WordFx;
+  perWord?: (i: number, info: RowWordInfo) => WordFx;
   font?: string;
   weight?: number;
   lineHeight?: number;
   tracking?: number;
   renderOrder?: number;
+  /** explicit rows: word indices per row (words not listed are hidden); overrides maxWidth */
+  rows?: number[][];
+  /** with `rows`: size multiplier per row (default 1) */
+  rowScale?: number[];
+  /** custom `text` drawn exactly as given (no upper-casing, no punctuation stripping); default false */
+  verbatim?: boolean;
+  /** 0..1 colour of each control/free (red/gold) word: 0 = loses its colour (stays visible) */
+  glow?: (i: number, info: RowWordInfo) => number;
+  /** 'light'/'dark': > 0 = control words as solid authRed letters at this brightness (default 0 = off) */
+  redFill?: number;
+  /** 'dark': multiplier on the gold glow behind gold words (default 1) */
+  goldGlow?: number;
+  /** false = not drawn into reflections / any camera other than the default camera (default true) */
+  mirror?: boolean;
 } & Omit<React.ComponentProps<'group'>, 'children'>;
+
+type BeforeRender = (r: THREE.WebGLRenderer, s: THREE.Scene, cam: THREE.Camera, g: THREE.BufferGeometry, mat: THREE.Material) => void;
 
 export const WorldLyric: React.FC<WorldLyricProps> = ({
   line, text, time, size = 0.5, mode = 'light', maxWidth, align = 'center', anchor = 'center', color, intensity, from, until,
   reveal = 'word', halo, fog, opacity = 1, flicker = 0, perWord, font = SFONTS.futura, weight = 500, lineHeight = 1.18,
-  tracking = 0.15, renderOrder, ...group
+  tracking = 0.15, renderOrder, rows, rowScale, verbatim = false, glow, redFill = 0, goldGlow = 1, mirror = true, ...group
 }) => {
+  const mainCam = useThree((st) => st.camera);
+  // mirror={false}: hide from reflection cameras; each glyph material carries its intended opacity in userData.op
+  const brProps = useMemo((): {onBeforeRender?: BeforeRender} => (mirror ? {} : {
+    onBeforeRender: (_r, _s, cam, _g, mat) => {
+      mat.opacity = cam === mainCam ? (mat.userData.op ?? 1) : 0;
+    },
+  }), [mirror, mainCam]);
   const section = line !== undefined ? LINES[line].section : '';
   const words = useMemo(
-    () => (line !== undefined ? LINES[line].words.map((w) => ({text: w.text, start: w.start})) : (text ?? '').split(/\s+/).filter(Boolean).map((t) => ({text: t, start: -Infinity}))),
+    () => (line !== undefined ? LINES[line].words.map((w) => ({text: w.text, start: w.start})) : textWords(text ?? '', -Infinity)),
     [line, text],
   );
+  const vb = verbatim && line === undefined;
+  // rows / rowScale are usually inline array literals: key the layout on their contents, not their identity
+  const rowsKey = rows ? JSON.stringify(rows) : '';
+  const scaleKey = rowScale ? JSON.stringify(rowScale) : '';
   const L = useMemo(
-    () => layout(words, size, maxWidth, align, anchor, lineHeight, font, weight, tracking),
-    [words, size, maxWidth, align, anchor, lineHeight, font, weight, tracking],
+    () => layout(words, size, maxWidth, align, anchor, lineHeight, font, weight, tracking, {rows, rowScale, verbatim: vb}),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [words, size, maxWidth, align, anchor, lineHeight, font, weight, tracking, rowsKey, scaleKey, vb],
   );
   const additive = mode === 'light';
   const useFog = fog ?? (mode === 'paint' || mode === 'dark');
@@ -260,13 +366,21 @@ export const WorldLyric: React.FC<WorldLyricProps> = ({
   const haloK = halo ?? (mode === 'light' ? 0.35 : mode === 'screen' ? 0.15 : 0);
   // failing-light flicker (stepped, deterministic)
   const fl = flicker > 0 ? 1 - flicker * (fh(Math.floor(time * 24)) < flicker * 0.8 ? 1 : 0.15) : 1;
+  // reveal 'line': the whole block appears at the line's first sung word (also when `rows` hides that word)
+  const firstStart = words[0]?.start ?? -Infinity;
 
-  const state = L.laid.map((w, i) => {
-    const firstStart = L.laid[0]?.start ?? -Infinity;
+  const state = L.laid.map((w) => {
+    const i = w.idx;
     const on = inWindow && (reveal === 'line' ? time >= firstStart || line === undefined : time >= w.start || line === undefined);
     const since = time - w.start;
-    const c = lyricWordColor(w.raw, section, since, base);
-    const fx = perWord ? perWord(i, {text: w.text, start: w.start, since, row: w.row, x: w.x, y: w.y, width: w.width}) : {};
+    const info: RowWordInfo = {
+      text: w.text, start: w.start, since, row: w.row, x: w.x, y: w.y, width: w.width, col: w.col, rowX: w.rowX,
+      rowWidth: w.rowWidth, rowStart: w.rowStart,
+    };
+    const c0 = lyricWordColor(w.raw, section, since, base);
+    const gk = glow && c0.special ? Math.max(0, Math.min(1, glow(i, info))) : 1;
+    const c = gk >= 1 ? c0 : gk <= 0 ? {color: base, special: false, flash: 1} : {...c0, flash: c0.flash * gk};
+    const fx = perWord ? perWord(i, info) : {};
     return {on: on && fx.visible !== false, c, fx};
   });
 
@@ -275,12 +389,27 @@ export const WorldLyric: React.FC<WorldLyricProps> = ({
       const m = mats[i];
       if (!m) return;
       const op = opacity * (s.fx.opacity ?? 1);
+      const isRed = s.c.special && s.c.color === S.authRed;
+      const solidRed = isRed && redFill > 0 && (mode === 'dark' || mode === 'light');
       if (mode === 'dark') {
         // black letters; control/free words keep their colour as a glow BEHIND the dark letters
-        m.main.color.set(base);
+        // (redFill: control words become solid red letters with only a faint red glow)
+        const redK = redFill * 0.8 * Math.min(1.15, s.c.flash) * fl;
+        if (solidRed) m.main.color.set(S.authRed).multiplyScalar(redK);
+        else m.main.color.set(base);
         m.main.blending = THREE.NormalBlending;
-        const hk = s.c.special ? Math.max(haloK, 0.75) * s.c.flash * fl : 0;
-        m.halo.color.set(s.c.color).multiplyScalar(Math.min(2, 1.6 * hk));
+        const isGold = s.c.special && !isRed;
+        const hk = s.c.special ? Math.max(haloK, 0.75) * s.c.flash * fl * (solidRed ? 0.3 : 1) : 0;
+        const gg = isGold ? goldGlow : 1;
+        m.halo.color.set(s.c.color).multiplyScalar(Math.min(2 * gg, 1.6 * hk * gg));
+        m.halo.visible = hk > 0.001;
+      } else if (solidRed) {
+        // solid red letter: never added onto bright/gold haze (that reads orange); the glow drain (flash → 0) darkens it
+        const redK = redFill * 1 * Math.min(1.15, s.c.flash) * fl;
+        m.main.color.set(S.authRed).multiplyScalar(redK);
+        m.main.blending = THREE.NormalBlending;
+        const hk = haloK * 0.45;
+        m.halo.color.set(S.authRed).multiplyScalar(Math.min(1.2, redK) * hk);
         m.halo.visible = hk > 0.001;
       } else {
         const k = baseI * s.c.flash * fl;
@@ -292,6 +421,8 @@ export const WorldLyric: React.FC<WorldLyricProps> = ({
       }
       m.main.opacity = op;
       m.halo.opacity = op;
+      m.main.userData.op = op;
+      m.halo.userData.op = op;
     });
   });
 
@@ -302,17 +433,18 @@ export const WorldLyric: React.FC<WorldLyricProps> = ({
         const s = state[i];
         if (!s.on) return null;
         const g = w.glyph;
-        const pw = g.w * size;
-        const ph = g.h * size;
+        const sz = w.size;
+        const pw = g.w * sz;
+        const ph = g.h * sz;
         // canvas → plane: left edge at x - padX, baseline at w.y
-        const cx = w.x - (g.w - g.adv) * size * 0.5 + pw / 2;
-        const cy = w.y + (g.base - g.h / 2) * size;
+        const cx = w.x - (g.w - g.adv) * sz * 0.5 + pw / 2;
+        const cy = w.y + (g.base - g.h / 2) * sz;
         const o = s.fx.offset ?? [0, 0, 0];
         const sc = s.fx.scale ?? 1;
         return (
           <group key={i} position={[cx + o[0], cy + o[1], o[2]]} rotation={s.fx.rotation ?? [0, 0, 0]} scale={sc}>
-            {haloK > 0 || mode === 'dark' ? <mesh geometry={PLANE} material={mats[i].halo} scale={[pw, ph, 1]} position={[0, 0, -0.001]} renderOrder={renderOrder} /> : null}
-            <mesh geometry={PLANE} material={mats[i].main} scale={[pw, ph, 1]} renderOrder={renderOrder} />
+            {haloK > 0 || mode === 'dark' ? <mesh geometry={PLANE} material={mats[i].halo} scale={[pw, ph, 1]} position={[0, 0, -0.001]} renderOrder={renderOrder} {...brProps} /> : null}
+            <mesh geometry={PLANE} material={mats[i].main} scale={[pw, ph, 1]} renderOrder={renderOrder} {...brProps} />
           </group>
         );
       })}

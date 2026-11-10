@@ -65,6 +65,16 @@ export const spillTex = () =>
     g.fill();
   });
 
+/** saw-cut paving joints: two dark edge lines on a transparent tile (one slab per UV repeat; the lines are ~1.2 % of
+ *  the slab wide, ≈ 7 cm on a 6 m slab) */
+export const jointTex = () =>
+  cachedTex('joint', 256, 256, (g) => {
+    g.clearRect(0, 0, 256, 256);
+    g.fillStyle = 'rgba(0,0,0,1)';
+    g.fillRect(0, 0, 256, 3);
+    g.fillRect(0, 0, 3, 256);
+  });
+
 // ------------------------------------------------------------------------------------------------ glow card
 const PLANE = new THREE.PlaneGeometry(1, 1);
 

@@ -30,9 +30,37 @@ shot B and the title slab (`pulse`) breathe the same way.
   a doorway, `Walkers` and `WetGround`. (Review fix: the first version tilted ~38° in 2.2 s — the text slid DOWN the
   screen at ~19 px/frame and strobed; it is now a slow descending crane, so the credits rise.)
 - `ShotTitle.tsx`: shot C. A `TenureScreen` (`background="red"`, spans with `opacity` for the dim, `reveal` from a
-  letter schedule that skips spaces), `SilGuy`, `SilPancake`, a distant `CityGrid` with a horizon `Backlight`, and
-  `WetGround`.
+  letter schedule that skips spaces), `RedTrim` (multiply plane over the face, see below), `SilGuy`, `SilPancake`, a
+  distant `CityGrid` with a horizon `Backlight`, and `WetGround`.
 - `common.tsx`: `Ground`, `Block` (a static concrete box), `Walkers` (hooded passers-by) and the rim presets.
+
+## Red reads RED (review fix, measured on renders)
+ACES + the lens's 0.92 saturation lift green out of authRed: at 1.0× linear it lands at ≈ (238, 58, 42) (s 0.82), at 1.3×
+(245, 81, 54) (hue 9°, coral), at 2× (247, 120, 76) (orange). authRed itself is (255, 42, 31), hue 2.9°, s 0.88.
+- Shot A: the iris rings are up to 1.2× their `intensity` (× up to 1.18 per wall iris). The hero close-up measured
+  (246, 80, 59) at its hottest and the wall at 3.4 s (246, 90, 66), which read coral. While an iris is big on screen
+  (camera d ≤ 50 m, until ~3.9 s), the hero runs at 0.82 and the wall at 0.8. Both ease up to the wide's level, hero 1.0
+  and wall 1.05 (+ 0.25 × bass), by d = 140 m (~4.6 s), when the irises are small LOD dots. The hero's `glow` is divided
+  by its intensity, so the halo keeps its level. Close-up now (238, 64, 51) at its hottest, bulk (227, 45, 42); wall at 3.4 s (235, 61, 51).
+- Shot B: the crowning iris runs at 0.9 (+ 0.15 × bass), was 1.15 (+ 0.2). Its glow went from 0.45 to 0.57, so the halo is unchanged.
+- Shot C: a whole field of authRed at ~0.9–1.15× measured (234, 52, 40) (s 0.83, vermilion). `RedTrim` is a
+  multiply-blended plane 0.1 m in front of the slab face. It scales the face by (1, 0.6, 0.3) in linear light before
+  tone mapping. R is unchanged, and the green/blue the face carries into ACES drops. The slab now measures
+  (233, 40, 30), hue 2.9°, s 0.87, which is authRed. The void letters stay void. The screen's own haze draws after it
+  (renderOrder 1), and the Guy and dog in front are untouched (depth test). The wet-ground reflection shows the trimmed
+  face. Luma is ~7% lower purely from the removed green; the red level is the same.
+- Keep any new red in this scene ≤ ~1.0× linear where it is large on screen.
+
+## Lib changes re-checked
+- Skinned hood cowl: the shot A/B passers-by and the shot C Guy (back view, hood up) read as hooded figures at full
+  resolution. Pancake's tail curl (knot) is fine, and the tail is still.
+- Iris glint now fades with intensity < 1: the hero close-up at 0.82 keeps a clear white catchlight (82 %). The wide's
+  hero glint (intensity ≥ 1) is unchanged. IrisWall glints are not affected.
+- Passers-by placement (review fix): shot A's third walker moved x −9 → −5, shot A's second x 6.0 → 4.2, and shot B's
+  third x −3.6 → −2.7. Before, they crossed black on black (the dark reflection of the left / right blocks, the facade
+  beside the door). Shot A's second walker spent 6.3–6.55 s on the right blocks' dark reflection; now it steps out from
+  behind the block at the band's edge (6.2–6.3 s) and is fully on the red by 6.4 s. All three are in the light in both
+  shots.
 
 ## Continuity
 - The Guy has his hood up and Pancake's tail is still (`tailWagAmount 0`, ears slightly low). Both are small in frame.

@@ -1,8 +1,11 @@
-// Pre · shot 2 camera: one continuous move. It starts close and steep over him as he walks up the plaza axis, then
-// cranes up and back (accelerating) until he is a speck in a city of lease tags. Pure functions of song time, shared
-// by the shot and by the lyric layout (each line is sized/placed for the camera at the time it is sung).
-// The framing is anchored on HIM: he stays in the lower part of the picture (HE_ANGLE below the frame centre) while
+// Pre · shot 2 camera: one continuous move. It opens low and long behind him as he walks out up the plaza axis (the
+// whole wet, red-lit plaza ahead of him, rows of tagged masts, bollards and benches), then booms up and back in one calm,
+// continuous rise until he is a speck in a city of lease tags. Pure functions of song time, shared by the shot and by
+// the lyric layout (each line is sized/placed for the camera at the time it is sung).
+// The framing is anchored on HIM: he stays in the lower part of the picture (his angle below the frame centre) while
 // the camera rises, so he shrinks to a dot in place and the words fill the upper part of the frame ahead of him.
+// Interpolation is a monotone cubic Hermite IN TIME (Fritsch–Carlson tangents), distance in log space: the speed has no
+// jumps at the keys and the zoom-out rate (d ln dist / dt) only ever grows gently (≈0.05 → 0.37 → 0.5 → 0.66 /s).
 import {cameraFovForVisible} from '../../lib/palette';
 import {GUY} from '../../../lib/characters/Guy';
 import {T_CUT} from './timing';
@@ -15,31 +18,41 @@ export const HE_Z0 = 52;
 export const heZ = (t: number) => HE_Z0 - Math.max(0, t - T_CUT) * WALK;
 
 /** [song s, camera distance to the frame-centre ground point (m), depression (deg), his angle below centre (deg)]
- *  distance interpolated in log space */
+ *  distance interpolated in log space. Keys on the line onsets (50.33 cut / 52.42 "How" / 54.60 "in" / 56.68 end of
+ *  "anything?") and the chorus slam (57.75, under the full whiteout). */
 export const CRANE_KEYS: [number, number, number, number][] = [
-  [T_CUT, 27, 33, 6.8],
-  [52.42, 32, 35, 6.8],
-  [54.6, 78, 40, 6.0],
-  [56.68, 235, 49, 4.6],
-  [57.2, 430, 53, 3.8],
-  [57.75, 760, 57, 3.2],
+  [T_CUT, 45, 16, 6.6],
+  [52.42, 50, 21.5, 6.6],
+  [54.6, 95, 33, 6.0],
+  [56.68, 240, 44.5, 4.6],
+  [57.75, 470, 51, 3.6],
 ];
 
-// Catmull-Rom through keys (clamped ends), evaluated per channel; uniform parameter per segment
-const cr = (p0: number, p1: number, p2: number, p3: number, u: number) => {
-  const u2 = u * u;
-  const u3 = u2 * u;
-  return 0.5 * (2 * p1 + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u2 + (-p0 + 3 * p1 - 3 * p2 + p3) * u3);
-};
+// monotone cubic Hermite per channel, parameterised by time (non-uniform keys keep a continuous velocity)
 const channel = (t: number, idx: number, map: (v: number) => number, unmap: (v: number) => number) => {
   const K = CRANE_KEYS;
+  const n = K.length;
   if (t <= K[0][0]) return K[0][idx];
-  if (t >= K[K.length - 1][0]) return K[K.length - 1][idx];
+  if (t >= K[n - 1][0]) return K[n - 1][idx];
+  const x = K.map((k) => k[0]);
+  const y = K.map((k) => map(k[idx]));
+  const d: number[] = [];
+  for (let i = 0; i < n - 1; i++) d.push((y[i + 1] - y[i]) / (x[i + 1] - x[i]));
+  const m = (i: number) => {
+    if (i === 0) return d[0];
+    if (i === n - 1) return d[n - 2];
+    if (d[i - 1] * d[i] <= 0) return 0;
+    const w1 = 2 * (x[i + 1] - x[i]) + (x[i] - x[i - 1]);
+    const w2 = x[i + 1] - x[i] + 2 * (x[i] - x[i - 1]);
+    return (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]);
+  };
   let i = 0;
-  while (i < K.length - 2 && t > K[i + 1][0]) i++;
-  const u = (t - K[i][0]) / (K[i + 1][0] - K[i][0]);
-  const v = (j: number) => map(K[Math.max(0, Math.min(K.length - 1, j))][idx]);
-  return unmap(cr(v(i - 1), v(i), v(i + 1), v(i + 2), u));
+  while (i < n - 2 && t > x[i + 1]) i++;
+  const h = x[i + 1] - x[i];
+  const u = (t - x[i]) / h;
+  const u2 = u * u;
+  const u3 = u2 * u;
+  return unmap((2 * u3 - 3 * u2 + 1) * y[i] + (u3 - 2 * u2 + u) * h * m(i) + (-2 * u3 + 3 * u2) * y[i + 1] + (u3 - u2) * h * m(i + 1));
 };
 const id = (v: number) => v;
 const D2R = Math.PI / 180;

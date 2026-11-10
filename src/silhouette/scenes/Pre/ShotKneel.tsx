@@ -8,15 +8,13 @@ import React, {useLayoutEffect, useMemo} from 'react';
 import {S, GREYS, cameraFovForVisible} from '../../lib/palette';
 import {CameraRig} from '../../lib/SilStage';
 import {SilGuy, SilPancake} from '../../lib/SilCast';
-import {Silhouette} from '../../lib/Silhouette';
 import {Iris} from '../../lib/Iris';
-import {WorldLyric, measureLyric} from '../../lib/WorldLyric';
+import {WorldLyric} from '../../lib/WorldLyric';
 import {Backlight, LightShaft} from '../../lib/atmos';
 import {Stencil, leaseCode} from '../../lib/tenure';
 import {useConcreteMat, wboxMinMax, mergeBoxes, FLOOR_TILE} from '../../lib/sets';
 import * as THREE from 'three';
 import {bassAt} from '../../../lib/time';
-import {guyJointMatrix, GuyPose} from '../../../lib/characters/Guy';
 import {GlowCard, ShotProps, spillTex, smooth, prog, easeInOut, lerp} from './common';
 import {guyKneelPat, pancakeWaitSit} from './pose';
 import {T0, T_CUT, W} from './timing';
@@ -33,23 +31,8 @@ const DOG_POS: [number, number, number] = [GUY_POS[0] + 0.834, 0, GUY_POS[2] + 0
 const RIM = {color: S.bone, strength: 0.7, power: 6, dir: [0, 1] as [number, number]};
 const VIS_FOV = 24;
 const LYRIC_EM = 0.34;
-
-/** Cowl filler (local; the shared hood is untouched). In strict profile the SilGuy hood's back drape stands off the
- *  neck as a separate point, which reads as a ponytail. A soft black volume behind the neck, carried by the NECK joint
- *  (not the head), closes the gap so the hood flows into the shoulders like a hoodie's cowl. */
-const COWL = new THREE.SphereGeometry(1, 16, 12);
-const HoodFill: React.FC<{pose: GuyPose; rim: typeof RIM} & Omit<React.ComponentProps<'group'>, 'children'>> = ({pose, rim, ...group}) => {
-  const m = guyJointMatrix(pose, 'neck');
-  return (
-    <group {...group}>
-      <Silhouette rim={rim}>
-        <group matrix={m} matrixAutoUpdate={false}>
-          <mesh geometry={COWL} position={[0, 0.0, -0.13]} scale={[0.13, 0.15, 0.12]} />
-        </group>
-      </Silhouette>
-    </group>
-  );
-};
+/** HOLD ON, BUDDY, / I'LL BE RIGHT BACK, (explicit rows: the break never depends on the font) */
+const LYRIC_ROWS = [[0, 1, 2], [3, 4, 5, 6]];
 
 const Wall: React.FC = () => {
   const mat = useConcreteMat({color: GREYS.g4, ambient: 0.05, kind: 'wall'});
@@ -89,7 +72,6 @@ export const ShotKneel: React.FC<ShotProps> = ({t, abs}) => {
   const guyPose = guyKneelPat(k, r, stroke, t);
   const dogPose = pancakeWaitSit(t, touch);
   // the line: two rows of soft light above the lintel
-  const maxW = useMemo(() => measureLyric(8, LYRIC_EM).width * 0.58, []);
   const breath = (_i: number, info: {since: number}) => ({offset: [0, Math.min(0.12, Math.max(0, info.since) * 0.035), 0] as [number, number, number]});
   return (
     <>
@@ -110,10 +92,9 @@ export const ShotKneel: React.FC<ShotProps> = ({t, abs}) => {
       <Stencil text="EXIT · ON PLAN" font="mono" size={0.05} color={GREYS.g6} intensity={0.4} position={[DOOR.w / 2 + 0.55, 1.12, WALL_Z + 0.01]} />
       {/* the two of them, in profile */}
       <SilGuy pose={guyPose} position={GUY_POS} rotation-y={Math.PI / 2} rim={RIM} />
-      <HoodFill pose={guyPose} position={GUY_POS} rotation-y={Math.PI / 2} rim={RIM} />
       <SilPancake pose={dogPose} position={DOG_POS} rotation-y={-Math.PI / 2} rim={RIM} />
       {/* "HOLD ON, BUDDY, / I'LL BE RIGHT BACK," */}
-      <WorldLyric line={8} time={t} size={LYRIC_EM} maxWidth={maxW} position={[0, 3.08, WALL_Z + 0.9]} intensity={0.95} halo={0.3} until={T_CUT + 0.1} perWord={breath} />
+      <WorldLyric line={8} time={t} size={LYRIC_EM} rows={LYRIC_ROWS} position={[0, 3.08, WALL_Z + 0.9]} intensity={0.95} halo={0.3} until={T_CUT + 0.1} perWord={breath} />
     </>
   );
 };

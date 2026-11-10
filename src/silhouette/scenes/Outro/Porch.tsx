@@ -1,9 +1,11 @@
 // TERMS · Outro — the porch: the man (hood DOWN) sitting on the front step with his left arm round Pancake, who sits
-// beside him (tail wagging slowly), and the plain bowl on the ground in its gold pool. One component for both shots so
-// the cut matches exactly. House-local coordinates (HouseCube at the origin, front face +Z at z = 4; step top y 0.37).
+// beside him (tail wagging slowly), and the plain bowl on the ground in its gold pool, which bounces a warm glow onto
+// the step's front face so his shins and the bowl stand black against gold even in the far wide. One component for both
+// shots so the cut matches exactly. House-local coordinates (HouseCube at the origin, front face +Z at z = 4; step top
+// y 0.37, step front face z 5).
 import React from 'react';
 import {SilGuy, SilPancake} from '../../lib/SilCast';
-import {PlainBowl} from '../../lib/props';
+import {FloorGlow, PlainBowl} from '../../lib/props';
 import {HOUSE_SPOTS} from '../../lib/sets';
 import {GuyPose, guyIdle, mergePose} from '../../../lib/characters/Guy';
 import {pancakeIdle, PancakePose} from '../../../lib/characters/Pancake';
@@ -26,6 +28,16 @@ export const DOG_TURN = 0.35;
 /** warm bounce off the gold pool onto the step face (point light intensity) */
 export const BOUNCE = 3.5;
 export const BOWL_AT: V3 = [0.62, 0, HOUSE_SPOTS.bowl[2] + 0.1];
+/** the gold pool round the bowl (PlainBowl poolSize; Final's crane uses 2.2) */
+export const POOL_SIZE = 2;
+/** the step's front face (z) and height: door plane + 2 × half the step depth (5.0 for the 8 m cube) */
+export const STEP_FRONT = 2 * HOUSE_SPOTS.step[2] - HOUSE_SPOTS.door[2];
+export const STEP_TOP = HOUSE_SPOTS.step[1];
+/** the pool's gold bounce on the step's front face: a glow brightest at the ground line, fading up the face. From the
+ *  wide (0.9 m high, 55 m out) the 7 cm bowl is seen against the bottom 6 cm of this face, so this is what it reads
+ *  against there (on the dark concrete it was a ~4 px smudge); his shins and feet read against it too. Centred between
+ *  his feet and the bowl, inside the step's width (x ±1.6) and below its top edge. */
+export const STEP_GLOW = {x: 0.18, width: 2.7, intensity: 0.85};
 
 /** Pancake's pose: sitting, a slow contented wag, head toward his man; `attn` 0..1 = the iris has his attention (he
  *  shifts round, his head swings up toward it in profile, the tail goes still); `after` 0..1 = it is gone (the wag comes back, a little
@@ -69,13 +81,27 @@ export type PorchProps = {
   /** bowl fill (he has eaten) */
   fill?: number;
   pool?: number;
+  /** gold bounce glow on the step's front face (FloorGlow intensity; 0 = off) */
+  stepGlow?: number;
 };
 
-export const Porch: React.FC<PorchProps> = ({t, attn = 0, after = 0, rim = 0.35, fill = 0.12, pool = 0.8}) => (
+/** a FloorGlow stood up on the step's front face: local +Y (its normal) → +Z, its wedge (+Z, brightest at the source edge)
+ *  → +Y, so the source edge lies along the ground line and the glow fades upward */
+const StepGlow: React.FC<{intensity: number}> = ({intensity}) => (
+  <group position={[STEP_GLOW.x, 0, STEP_FRONT]} rotation-y={Math.PI}>
+    <group rotation-x={-Math.PI / 2}>
+      <FloorGlow shape="wedge" size={[STEP_GLOW.width, STEP_TOP - 0.02]} near={1} far={0.8} softness={0.55} breakup={0.3}
+        color={S.dawnGold} intensity={intensity} seed={7} />
+    </group>
+  </group>
+);
+
+export const Porch: React.FC<PorchProps> = ({t, attn = 0, after = 0, rim = 0.35, fill = 0.12, pool = 0.8, stepGlow = STEP_GLOW.intensity}) => (
   <>
     <SilGuy position={GUY_AT} pose={guyPose(t, attn)} hood={0} rim={goldRim(rim)} />
     <SilPancake position={DOG_AT} rotation-y={DOG_YAW + DOG_TURN * attn} pose={dogPose(t, attn, after)} rim={goldRim(rim * 0.9)} />
-    <PlainBowl position={BOWL_AT} fill={fill} goldPool={pool} poolSize={1.5} shaft={0} />
+    <PlainBowl position={BOWL_AT} fill={fill} goldPool={pool} poolSize={POOL_SIZE} shaft={0} />
+    <StepGlow intensity={stepGlow} />
     {/* the gold pool on the ground bounces a little warm light onto the step's front face, so his shins read as one
         black shape down to his feet (on a black step the feet floated, cut off from the body) */}
     <pointLight position={[0.1, 0.08, 5.75]} color={S.dawnGold} intensity={BOUNCE} distance={2.4} decay={2} />

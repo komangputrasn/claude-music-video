@@ -19,6 +19,8 @@ export const SHOT_B = {t0: 61.56, t1: 65.9};
 export const FOG_B = {color: S.ash, near: 30, far: 260};
 
 const SIZE = 9;
+/** the notice's rows, fixed (not wrapped by font metrics): YOU PUT MY / WHOLE HOUSE / ON A PLAN / SOMEHOW */
+const ROWS13 = [[0, 1, 2], [3, 4], [5, 6, 7], [8]];
 
 export const ShotHouse: React.FC<ShotProps> = ({t, f}) => {
   const u = prog(t, SHOT_B.t0, SHOT_B.t1);
@@ -47,7 +49,7 @@ export const ShotHouse: React.FC<ShotProps> = ({t, f}) => {
       ))}
       <HouseCube size={SIZE} time={t} laserCage={cage} cagePulse={0.6 + 0.4 * bass} stencil="" ambient={0.05} facadeLight={0.05} doorIris={{open: 1, intensity: 1.4 + 0.3 * bass}} />
       {/* the notice, stencilled on the house */}
-      <WorldLyric line={13} time={t} mode="paint" color={S.bone} intensity={0.82} size={0.84} maxWidth={8.3} position={[0, 6.15, SIZE / 2 + 0.03]} until={SHOT_B.t1 + 0.05} />
+      <WorldLyric line={13} time={t} mode="paint" color={S.bone} intensity={0.82} size={0.84} rows={ROWS13} position={[0, 6.15, SIZE / 2 + 0.03]} until={SHOT_B.t1 + 0.05} />
       {/* the plan, projected in the fog above it (both lines clear the cage's front top edge in projection, so no laser
           line runs through the text) */}
       <FloatingPrice text="$9.99 / MO" size={1.45} position={[0, 14.1, 0]} time={t} intensity={1.35} opacity={priceOn} haze={0.7} />

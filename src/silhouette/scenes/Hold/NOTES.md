@@ -2,8 +2,9 @@
 
 Bridge: hold music, then the voice. The quietest scene in the film, and **one take**. Lines owned
 (`sceneLyricLines(155.95, 166.39)`): **[36]** "Then the hold music stopped, and the voice came through," and **[37]** "the one
-from my pillow, and it said, 'Is that you?'". Scene-local frame = absolute − 4678. Sync points are in `timing.ts` (all from
-`wordTime`).
+from my pillow, and it said, 'Is that you?'". Plus the **tail word of [35]**: "had." (Cancel's line) is still being sung for
+the first 0.27 s (155.80–156.20), so Hold shows that one word (only it: Cancel already showed the rest of the line up to its cut).
+Scene-local frame = absolute − 4678. Sync points are in `timing.ts` (all from `wordTime`).
 
 ## The image
 A black ocean runs to the horizon under a low band of lit fog. Over the sea hangs **the pillow, the size of a building**: the
@@ -17,7 +18,7 @@ back to us and the hood up. His phone is at his **left** ear and grandpa's hamme
 ## Shot list
 | # | scene-local frames | song s | syncs to | camera | what reads in silhouette |
 |---|---|---|---|---|---|
-| 1a · ON HOLD | 0–55 | 155.93–157.80 | [36] "Then" 156.20 (f8), "hold" 156.88 (f28), "music" 157.20 (f38); beats 155.94/156.48/157.04/157.62 pulse the haze and traces | one take: dolly z 31.5 → 25 m and zoom 22° → 17.5° visible fov down the axis (man → eye), eased 155.93 → 162.0; level, pitch 5.1° → 4.9°, height 1.05 → 1.0 m | Tiny hooded man on the black mirror sea, his elbow up (phone at his ear), cut out of the horizon haze, with his reflection broken by the swell. The black pillow eclipses a halo of fog. Red traces ripple across the whole sky. **"THEN THE HOLD MUSIC"** in bone light rides the nearest trace word by word, each word bobbing and tilting with the wave. |
+| 1a · ON HOLD | 0–55 | 155.93–157.80 | [35] tail "had." to 156.20 (f0–7); [36] "Then" 156.20 (f8), "hold" 156.88 (f28), "music" 157.20 (f38); beats 155.94/156.48/157.04/157.62 pulse the haze and traces | one take: dolly z 31.5 → 25 m and zoom 22° → 17.5° visible fov down the axis (man → eye), eased 155.93 → 162.0; level, pitch 5.1° → 4.9°, height 1.05 → 1.0 m | Tiny hooded man on the black mirror sea, his elbow up (phone at his ear), cut out of the horizon haze, with his reflection broken by the swell. The black pillow eclipses a halo of fog. Red traces ripple across the whole sky. From the cut, **"HAD."** (dim bone, alone) lies on the nearest trace, centred; it goes as "THEN" arrives. **"THEN THE HOLD MUSIC"** in bone light rides the nearest trace word by word, each word bobbing and tilting with the wave. |
 | 1b · STOPPED | 45–56 | 157.42–157.80 | the music decays (rms falls) | (push continues) | The traces flatten into straight lines, and the words settle flat on the line. |
 | 1c · THE BLACKOUT | 56–128 | 157.80–160.24 | **"stopped" 157.80 (abs 4734)**: EVERY light cuts at once (haze, traces, phone screen, his rim; the scene fog goes to void); "voice" 159.00 (f92) | push continues in the dark (only the seam grows) | Black. Only the pillow's **red seam** (the closed eye) is left, high in the frame. **"STOPPED, AND THE VOICE CAME THROUGH,"** lies in dim bone just above the black water, in front of where he stands (he is invisible now). Its reflection, broken by the swell, is the only proof the sea is still there. On "voice came through" the seam crackles like a voice on the line (talk 0.55, brighter). |
 | 1d · THE EYE OPENS | 129–181 | 160.24–162.00 | [37] "the" 160.24 (f129, a beat), "one" 161.12 (f156): the lids part | camera eases to rest at 162.0 (f182) | **"THE ONE FROM MY PILLOW, AND IT SAID,"** appears in the same place, smaller (paint, bone). The eye's lids part. Its red light lights the haze round the pillow (its puffy edges glow: it reads as a cushion) and falls in a column to the sea behind him. He comes back out of the dark as a black cut-out with a hairline red rim on the hood, and his reflection lies below him. |
@@ -28,6 +29,11 @@ match cut (dark red eye world → gold dawn world, same man, same back view).
 
 ## Lyric placement (all `<WorldLyric>`, via the local `LyricRows`)
 - `TEXT_POS` (8 m beyond him, 3.3 m up, between his hood and the pillow) carries the music and then the voice.
+- [35] word 8 only ("HAD.", sung 155.80–156.20 across the cut from Cancel): `LyricRows rows={[[8]]}` at `TEXT_POS`, centred,
+  `light` mode, dim bone (intensity 0.6, halo 0.14), em = 0.9 × [36]'s (≈ 41 px, cap ≈ 29 px), riding the carrier like [36]
+  but with its whole tilted baseline kept clear of the wave (`ride(xc, lift, halfW, clear)`: crests under the word's ends no
+  longer cut through the letters). Window = line 35's default (ends 156.20 exactly when "THEN" appears). Sits at y ≈ 549–599
+  px, ≈ 21 px under the pillow's bottom edge.
 - [36] words 0–3: `light` mode, bone, em ≈ 46 px (cap ≈ 32 px), offset per word by `waveY()` (the CPU twin of the trace shader),
   tilted with the slope (clamped ±0.22 rad). At 157.77 the trace is a flatline under them; they die with the light at 157.80.
 - [36] words 4–9 (blackout): `WATER_TEXT_POS`, 1.2 m in front of him, 8 cm above the sea. `light` mode, dim bone (0.62).
@@ -67,7 +73,12 @@ match cut (dark red eye world → gold dawn world, same man, same back view).
   plus `waveY`/`waveSlope` on the CPU.
 
 ## Lib notes (no lib edits)
+- SilGuy's hood is now the lib's skinned cowl (checked 155.93–166.39): from behind it reads as a hood flowing into the shoulders,
+  the phone hand at the left ear is a small knob at the hood's side with the elbow out, and the hanging hammer is a clean T in
+  the right fist. No scene-side hood workaround is needed (none was used).
+- `LyricRows` (common.tsx) predates the lib's native `rows` prop on `<WorldLyric>`; it is now redundant and could be swapped
+  for `<WorldLyric rows=… anchor="top">` (perWord info gives x/width/row), but it renders correctly and is kept as is.
 - `PillowIris` is used as is. Its speech envelope (`talk`) runs at syllable rate from `time`; in the near-silence time is slowed,
   so "Is that you?" is driven through `pupil`/`intensity` with a hand-timed 3-syllable envelope (`speech()` in `timing.ts`).
-- The `PillowIris` header says `rotation-x={-1.1}` turns the iris toward +Z. By three's rotation convention, a positive angle about X
-  turns the top surface (+Y) toward +Z; this scene uses `π/2 + tilt`.
+- `PillowIris` orientation: a positive angle about X turns the eye (+Y) toward +Z (the lib doc now says `rotation-x={+1.1}`);
+  this scene uses `π/2 + tilt`.

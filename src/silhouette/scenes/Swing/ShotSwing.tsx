@@ -5,8 +5,9 @@
  * below it, his back to us, grandpa's hammer drawn back over his hood. The floor is barred by the cold window light
  * through the blinds, a red scan sliding along the bars. Time slows: the blow comes down in slow motion and lands on the
  * eye exactly at 129.20 s (abs 3876): the iris shatters (red glass, a bone flash) and gold — the first gold in the film —
- * floods out of the broken box toward us across the floor; kibble sparks fountain up at the lens. Pancake, sitting by the
- * box, pricks up his ears, his tail starts to wag, and he pads toward the light.
+ * floods out of the broken box toward us across the floor; kibble sparks fountain up at the lens. Pancake, lying on his
+ * side beside the man (his profile up to the lens), pricks up his ears, his tail starts to wag, he rolls up, gets up and
+ * pads toward the light.
  * The line is light on the floor, split around the blow: "ONE / SWING," left, "AND THE LID / FLEW OFF," right — "ONE"
  * in the cold window light, every word from the blow on in gold.
  */
@@ -30,6 +31,17 @@ const smooth = (x: number) => x * x * (3 - 2 * x);
 const DOG_START: V3 = [0.5, 0, -0.5];
 const DOG_EAT: V3 = [PILE[0] + 0.02, 0, PILE[2] - PANCAKE.noseEatLocal[2]];
 const DOG_SPEED = 0.42;
+/**
+ * From straight above, the chin-on-paws lie is a lump: head, paws and haunches merge into one blob. So he lies on his
+ * right side instead, facing the man (yaw 0 = +Z, image left), rolled LIE_ROLL about his long axis so his left flank
+ * faces this lens (≈ 20° off vertical from +X): the overhead sees his PROFILE (muzzle on the paws, the hanging ear, the
+ * curled tail over the rump). The roll pivots on the lying torso's centre line (lie drops the torso centre to 0.172 m),
+ * lifted LIE_LIFT so the flank rests on the floor. On the blow he rolls up onto his chest, then turns and gets up.
+ */
+const LIE_YAW = 0;
+const LIE_ROLL = 1.2;
+const LIE_PIVOT = 0.172;
+const LIE_LIFT = 0.02;
 
 /** floor text, read from this camera: text +X → room −Z (image right), text +Y → room −X (image up), normal +Y */
 const FloorText: React.FC<{at: V3; children: React.ReactNode}> = ({at, children}) => (
@@ -54,9 +66,9 @@ export const ShotSwing: React.FC<{t: number; abs: number}> = ({t, abs}) => {
   const scan = st.broken ? null : clamp01(0.12 + (t - W.one) / 1.3);
   const winI = (0.95 + 0.12 * bass) * (1 - 0.4 * gold);
 
-  // Pancake: lies on the barred floor beside the man (a long dog shape from above), ears low, tail still. On the blow his
-  // head comes up, ears up, the tail wags (the first time in the film); he gets up, pads into the gold and starts to eat
-  // at the heap (where shot 2 finds him)
+  // Pancake: lies on his side on the barred floor beside the man, his profile up to the lens (see LIE_ROLL), ears low,
+  // tail still. On the blow his head comes up, ears up, the tail wags (the first time in the film); he rolls up onto his
+  // chest, turns, gets up, pads into the gold and starts to eat at the heap (where shot 2 finds him)
   const a = st.a / 30; // seconds since the blow
   const perk = s01(a, 0.05, 0.4);
   const rise = s01(a, 0.4, 0.8);
@@ -70,7 +82,9 @@ export const ShotSwing: React.FC<{t: number; abs: number}> = ({t, abs}) => {
   const walkPose = {...pancakeWalk(walkT, DOG_SPEED, 3), earPerk: 0.55, headPitch: -0.05, tailWagAmount: 1, tailWag: t * 2.6};
   const eatPose = {...pancakeEat(t, 2), tailWagAmount: 1, earPerk: 0.15};
   const dogPose = eatK > 0 ? mixPose(walkPose, eatPose, eatK) : rise > 0 ? mixPose(liePose, walkPose, rise) : liePose;
-  const dogYaw = lerp(walkYaw, 0, eatK);
+  const rollK = 1 - smooth(s01(a, 0.06, 0.5)); // 1 = on his side (until the blow), 0 = upright on his chest
+  const turn = smooth(s01(a, 0.25, 0.8));
+  const dogYaw = lerp(lerp(LIE_YAW, walkYaw, turn), 0, eatK);
   const dogPos: V3 = [DOG_START[0] + Math.sin(walkYaw) * step, 0, DOG_START[2] + Math.cos(walkYaw) * step];
 
   // after the blow he straightens up, lowers the hammer and steps back and aside (toward the window), clearing the heap
@@ -99,7 +113,11 @@ export const ShotSwing: React.FC<{t: number; abs: number}> = ({t, abs}) => {
               softness={0.85} breakup={0.45} seed={7} />
           ) : null}
         </BrokenBox>
-        <SilPancake pose={dogPose} position={dogPos} rotation-y={dogYaw} />
+        <group position={dogPos} rotation-y={dogYaw}>
+          <group position-y={LIE_PIVOT + LIE_LIFT * rollK} rotation-z={LIE_ROLL * rollK}>
+            <SilPancake pose={dogPose} position-y={-LIE_PIVOT} />
+          </group>
+        </group>
         <FloorText at={[-0.3, 0.012, 1.22]}>
           <LyricRows line={28} time={t} rows={[[0], [1]]} size={0.2} mode="light" color={textCol} intensity={textI} halo={0.3}
             from={W.one - 0.2} />

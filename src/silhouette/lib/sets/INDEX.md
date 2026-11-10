@@ -219,6 +219,13 @@ Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CEL
   - The door is a deep-reveal opening in the centre, 1.2 × 2.5 above the step. Its slab slides into the wall on the +X
     side with `doorOpen` (the −X side is the carved climb room).
   - The TENURE iris lock is **on the right door-jamb face** (radius 0.16; props pass through `doorIris`).
+    `doorIris.position` (house-local) and `doorIris.radius` override the spot and the size, e.g.
+    `doorIris={{position: [-0.98, 1.62, 4.004], radius: 0.25}}` puts it on the left jamb. The red spill light
+    (`irisLight`) follows the iris, 0.6 m out along +Z. A rotated iris still gets its light along +Z.
+  - **Roof parapet.** A lip runs round the top 0.5 m (from y = size − 0.5, i.e. **7.5** for the 8 m cube) and stands
+    **8 cm proud** of every face. Text or decals on the facade plane above about **7.4 m** are hidden behind it (from a
+    low camera the lip's underside also covers a centimetre or two below 7.5). Keep facade lyrics below ~7.4, or put
+    them on a plane in front of the lip (z > size/2 + 0.08).
   - Two flanking windows have a **sill at 1.0 m** above the ground. The **left** one is the guyClimb window: its
     front skin is only 0.2 m thick, which is exactly guyClimb's sill (outer face +0.25, inner face +0.45 from the root).
     Behind it is a carved interior room (3 × 3 × 3.6 m, floor = ground) where he lands.
@@ -264,6 +271,13 @@ Also exported: `CELL`, `CELL_WINDOW`, `CELL_BED`, `CELL_DOOR`, `CELL_SLIT`, `CEL
           color?={GREYS.g5} ambient?={0.07} {...group}/>
 ```
 - **Layout.** The origin is the floor centre of the **entrance**, and the corridor runs to z = −length.
+  - **The set reaches 3.8 m in front of its origin.** The side walls and the ceiling start at **z = 3**, not 0, and
+    the entrance **portal face** (a thick frame round the mouth: 3.6 m out from each side of the opening and 3 m above
+    it) is a slab from **z 3 to 3.8**. The floor runs on to z 15. Anything at the entrance plane (z ≤ 3) that lies
+    outside the opening (|x| > width/2 or y > height), such as text on a facade, is hidden behind the portal.
+    To set the corridor into a wall of your own, place it at `z = wallZ − 3.85`, so the portal front sits 5 cm behind
+    the wall face (Chorus1 ShotCorridor: wall at z 0, `<Corridor position={[0, 0, -3.85]}/>`). Text on the wall then
+    sits in front of the portal.
   - Each gate has deep portal frames (wall ribs and a lintel), with half-ribs between gates.
   - A ceiling light slot runs the whole length (`slot`).
   - A bone doorway of light at the far end (`endLight`) is cut off as gates close.
@@ -347,6 +361,11 @@ Run `node scripts/still.mjs silplay Sets --frames=15,45,75,105,135,165,195,225,2
 **Framing and the far plane**
 - **Camera far plane.** `<SilStage>` defaults to `far: 800`. City wides and cranes need `camera={{far: 4000}}`,
   otherwise the far blocks and the horizon `Backlight` are clipped (verified in f285).
+
+**Geometry that hides your text**
+- **Corridor portal.** The Corridor's walls start at z 3 and its portal face fills z 3–3.8 in front of its origin
+  (§5). Text at the entrance plane outside the opening is hidden behind it.
+- **HouseCube parapet.** The roof lip (from y 7.5 on the 8 m cube, 8 cm proud) hides facade text above ~7.4 m (§4).
 
 **CellRoom: the cookie light**
 - **No shadows.**

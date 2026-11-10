@@ -32,11 +32,12 @@ const TGT0 = 25.5;
 const CAM1: [number, number, number] = [0, 1.3, 61];
 const TGT1 = 15.2;
 
-// they cross the lit doorway in the last ~0.8 s, once it has risen into the frame
+// they cross the lit doorway (x ±3.25) in the last ~0.8 s, once it has risen into the frame; all three stay inside
+// the light (at x0 −3.6 the third walked on the black facade beside the door until the cut: black on black)
 const WALKERS: Walker[] = [
   {x0: -1.0, z: 6, dir: 1, t0: 8.7},
   {x0: 1.4, z: 7.5, dir: -1, t0: 8.7, phase: 0.4},
-  {x0: -3.6, z: 5, dir: 1, t0: 8.7, phase: 0.8},
+  {x0: -2.7, z: 5, dir: 1, t0: 8.7, phase: 0.8},
 ];
 
 export const ShotTerms: React.FC<ShotProps> = ({t, f}) => {
@@ -61,8 +62,9 @@ export const ShotTerms: React.FC<ShotProps> = ({t, f}) => {
 
       {/* the terms of service, scrolling up like credits (faster than the camera sinks, so they rise on screen) */}
       <TermsScroll position={[0, TERMS_Y, 0.2]} width={TOWER_W - 8} height={TERMS_H} fontSize={1.45} speed={3.6} time={t} intensity={0.9} seed={3} fade={0.1} />
-      {/* TENURE watches from the crown of the text */}
-      <Iris position={[0, IRIS_Y, 0.3]} radius={IRIS_R} time={t} open={1} pupil={0.28 + 0.1 * breath} intensity={1.15 + 0.2 * breath} glow={0.45} />
+      {/* TENURE watches from the crown of the text (rings ≤ ~1.1× authRed so it reads red, not coral; the halo, which
+          scales with intensity, is raised to keep its old level) */}
+      <Iris position={[0, IRIS_Y, 0.3]} radius={IRIS_R} time={t} open={1} pupil={0.28 + 0.1 * breath} intensity={0.9 + 0.15 * breath} glow={0.57} />
 
       {/* the lit entrance at the foot: tiny passers-by cross it */}
       <mesh position={[0, DOOR[1] / 2, 0.12]}>

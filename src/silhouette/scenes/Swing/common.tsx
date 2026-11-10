@@ -6,7 +6,7 @@
 import React, {useMemo} from 'react';
 import {S} from '../../lib/palette';
 import {CELL, CELL_DOOR, CELL_SLIT, CELL_SPOTS} from '../../lib/sets';
-import {Monolith, MONOLITH} from '../../lib/props';
+import {Monolith, MONOLITH, KibbleSparks} from '../../lib/props';
 import {LeaseTags} from '../../lib/tenure';
 import {rand} from '../../../lib/time';
 import {boxState} from './timing';
@@ -29,20 +29,48 @@ export const IMPACT: V3 = boxToRoom(MONOLITH.impactPoint as V3);
 export const SWING_SPOT: V3 = boxToRoom(MONOLITH.guySwingSpot.position as V3);
 export const SWING_YAW = R + MONOLITH.guySwingSpot.rotationY;
 
+/** A set cheat for one camera: the box body and the light INSIDE it drawn `width`× as wide (Monolith-local X = room −Z)
+ *  and moved `shift` m along room +Z. Its light in the room (halo, cones, floor wedge) and the kibble heap stay exactly
+ *  where they are in the other shots, so the shot keeps its gold. */
+export type BoxCheat = {width: number; shift: number};
+
+const KIBBLE_COUNT = 300;
+/** the heap of <Monolith kibble> (its own <KibbleSparks> call: Monolith seed 1 → kibble seed 4; T·0.9 floor), drawn
+ *  unscaled when the box is cheated narrower, so the heap under Pancake's nose does not move */
+const Kibble: React.FC<{progress: number}> = ({progress}) =>
+  progress > 0 ? (
+    <KibbleSparks progress={progress} origin={MONOLITH.kibbleOrigin} count={KIBBLE_COUNT} seed={4} duration={3.4} pour={0.45}
+      velocity={[0, 1.45, 1.05]} spread={0.7} floorY={0.022 * 0.9}
+      pile={{center: MONOLITH.pileCenter, radius: 0.24, height: 0.085}} />
+  ) : null;
+
 /**
  * The feeder after (and before) the blow, in room space. Children render in Monolith-local space.
  * The gold spill is the LOCAL <GoldSpill> (NaN-safe shaders), so the Monolith itself gets spill={0}.
+ * `cheat` (shot 3 only): the box and its inner light drawn narrower and nudged, so he hides all of it (see BoxCheat).
  */
 export const BrokenBox: React.FC<{t: number; abs: number; pupil?: number; halo?: number; cones?: number; front?: number;
-  children?: React.ReactNode}> = ({t, abs, pupil = 0.3, halo = 1, cones = 1, front = 1, children}) => {
+  cheat?: BoxCheat; children?: React.ReactNode}> = ({t, abs, pupil = 0.3, halo = 1, cones = 1, front = 1, cheat, children}) => {
   const st = boxState(abs);
   return (
-    <group position={F} rotation-y={R}>
-      <Monolith time={t} pupil={pupil} intensity={1.5} irisGlow={0.45} shatter={st.shatter} spill={0} kibble={st.kibble}
-        kibbleCount={300} />
-      <GoldSpill spill={st.spill} shatter={st.shatter} halo={halo} cones={cones} front={front} />
-      {children}
-    </group>
+    <>
+      <group position={cheat ? [F[0], F[1], F[2] + cheat.shift] : F} rotation-y={R} scale={cheat ? [cheat.width, 1, 1] : 1}>
+        <Monolith time={t} pupil={pupil} intensity={1.5} irisGlow={0.45} shatter={st.shatter} spill={0}
+          kibble={cheat ? 0 : st.kibble} kibbleCount={KIBBLE_COUNT} />
+        {cheat ? (
+          <GoldSpill spill={st.spill} shatter={st.shatter} halo={0} cones={0} wedge={0} />
+        ) : (
+          <GoldSpill spill={st.spill} shatter={st.shatter} halo={halo} cones={cones} front={front} />
+        )}
+        {children}
+      </group>
+      {cheat ? (
+        <group position={F} rotation-y={R}>
+          <GoldSpill spill={st.spill} shatter={st.shatter} halo={halo} cones={cones} front={front} inner={0} />
+          <Kibble progress={st.kibble} />
+        </group>
+      ) : null}
+    </>
   );
 };
 

@@ -85,10 +85,13 @@ const CITY_NEAR = {rows: 3, cols: 11, spacing: 34, height: [3, 8.5] as [number, 
 /** the irises' red light in the night haze (additive mist between the rows of the city) */
 const MIST = '#64170F';
 
+// all three inside the red reflection of the avenue (screen x ≈ 770–1160 at 6.3 s, 820–1130 at the end of the pull)
+// from their first visible frame; at x −9 the third walked against the black reflection of the left-hand blocks, and at
+// x 6.0 the second spent 6.3–6.55 s on the dark reflection of the right-hand blocks (black on black)
 const WALKERS: Walker[] = [
   {x0: -2.5, z: 288, dir: 1, t0: 6.4},
-  {x0: 6.0, z: 296, dir: -1, t0: 6.4, phase: 0.31},
-  {x0: -9.0, z: 281, dir: 1, t0: 6.4, phase: 0.62},
+  {x0: 4.2, z: 296, dir: -1, t0: 6.4, phase: 0.31},
+  {x0: -5.0, z: 281, dir: 1, t0: 6.4, phase: 0.62},
 ];
 
 export const ShotIris: React.FC<ShotProps> = ({t, f}) => {
@@ -118,6 +121,14 @@ export const ShotIris: React.FC<ShotProps> = ({t, f}) => {
   const wallOn = smooth(prog(t, 1.9, 2.5));
   const haze = smooth(prog(t, PULL_FROM + 0.3, 5.5));
 
+  // Red stays RED while the irises are big on screen: an iris ring is up to 1.2× its intensity (× 1.18 per-iris
+  // brightness on the wall), and authRed above ~1.1× linear tone-maps coral under ACES (the close-up measured
+  // (246, 80, 59); the wall at 3.4 s (246, 90, 66)). So the HDR level stays ≤ ~1.0 while an iris is ≥ ~40 px in radius
+  // (until ~3.9 s) and rises to the wide's level once they are small dots (the LOD ring averages ≤ 0.85 there).
+  const big = 1 - smooth(clamp01((d - 50) / 90)); // 1 while an iris is ≥ ~40 px in radius, 0 from ~14 px (d ≥ 140 m)
+  const heroI = lerp(1.0, 0.82, big);
+  const wallI = lerp(1.05, 0.8, big);
+
   return (
     <>
       <CameraRig position={[0, camY, d]} target={[0, tgtY, 0]} fov={FOV} />
@@ -129,7 +140,7 @@ export const ShotIris: React.FC<ShotProps> = ({t, f}) => {
         {...WALL}
         radius={RADIUS}
         time={t}
-        intensity={(1.15 + 0.3 * breath) * wallOn}
+        intensity={(wallI + 0.25 * breath) * wallOn}
         pupil={0.27 + 0.13 * breath}
         wave={{center: [HERO_POS[0], HERO_POS[1]], start: t - R, speed: 1, width: waveW, mode: 'open'}}
         skip={[HERO]}
@@ -144,8 +155,8 @@ export const ShotIris: React.FC<ShotProps> = ({t, f}) => {
         time={t}
         open={open}
         pupil={lerp(0.52, 0.29, focus) + 0.1 * breath * focus}
-        intensity={1.0 + 0.15 * breath}
-        glow={lerp(0.22, 0.08, clamp01(k * 3))}
+        intensity={heroI + 0.15 * breath}
+        glow={lerp(0.22, 0.08, clamp01(k * 3)) / heroI /* the halo scales with intensity: keep its level */}
         opacity={pin}
       />
 

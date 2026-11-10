@@ -2,11 +2,12 @@
 // on a wet black plaza at night, dead centre; a black city lies along a faint horizon behind it. "BUY NOW," types on letter by letter (Futura,
 // void ink), a beat of silence, then "FOR NOW". On the downbeat at 11.262 s "BUY NOW," goes dark and leaves "FOR NOW"
 // alone. A man and his dog, two small black shapes, stand before it. Slow push-in. Cold, silent, monumental.
-import React from 'react';
+import React, {useLayoutEffect, useMemo} from 'react';
+import * as THREE from 'three';
 import {S, GREYS, cameraFovForVisible} from '../../lib/palette';
 import {CameraRig} from '../../lib/SilStage';
 import {SilGuy, SilPancake} from '../../lib/SilCast';
-import {TenureScreen} from '../../lib/tenure';
+import {TenureScreen, screenDims} from '../../lib/tenure';
 import {CityGrid} from '../../lib/sets';
 import {Backlight, WetGround} from '../../lib/atmos';
 import {bassAt, lerp} from '../../../lib/time';
@@ -34,6 +35,38 @@ const revealAt = (t: number) => EVENTS.reduce((n, [at, r]) => (t >= at ? Math.ma
 
 const FIG_Z = 94;
 
+// A whole field of authRed tone-maps VERMILION under ACES: its input matrix leaks red into green, so the slab measured
+// (235, 53, 40) on screen (s 0.83, orange-leaning). RedTrim multiplies the face (already drawn behind it) by TRIM in linear
+// light, taking out the green/blue the face carries before tone mapping: same red level (R unchanged), less of the
+// green lift, so the slab lands on authRed's hue at authRed's saturation. Void ink stays void; the screen's haze is
+// drawn after it (renderOrder 1) and the figures in front are untouched (depth test).
+const TRIM: [number, number, number] = [1, 0.6, 0.3];
+const FACE = screenDims({width: SCREEN_W, height: SCREEN_H});
+
+const RedTrim: React.FC<{width: number; height: number; position: [number, number, number]}> = ({width, height, position}) => {
+  const mat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color(...TRIM),
+        blending: THREE.CustomBlending,
+        blendEquation: THREE.AddEquation,
+        blendSrc: THREE.ZeroFactor,
+        blendDst: THREE.SrcColorFactor,
+        transparent: true,
+        depthWrite: false,
+        toneMapped: false,
+        fog: false,
+      }),
+    [],
+  );
+  useLayoutEffect(() => () => mat.dispose(), [mat]);
+  return (
+    <mesh position={position} material={mat}>
+      <planeGeometry args={[width, height]} />
+    </mesh>
+  );
+};
+
 export const ShotTitle: React.FC<ShotProps> = ({t, f}) => {
   const u = smooth(prog(t, T0, T1 + 0.4));
   const reveal = revealAt(t);
@@ -60,6 +93,7 @@ export const ShotTitle: React.FC<ShotProps> = ({t, f}) => {
         haze={0.35}
         fog={0.15}
       />
+      <RedTrim width={SCREEN_W} height={SCREEN_H} position={[0, FACE.border + SCREEN_H / 2, FACE.depth + 0.1]} />
 
       {/* a black city far behind, standing on a faint fog-lit horizon */}
       <Backlight color={S.fog} intensity={0.32} size={[2600, 150]} position={[0, 20, -640]} shape="slab" softness={0.95} noise={0.3} time={t} />

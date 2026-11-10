@@ -3,8 +3,9 @@
  * device. As `progress` rises its printed words peel off the page one by one, crumble into ASH flakes and drift UP into a
  * ceiling vent (red-lit as they are swallowed, if you give the vent). The page ends blank.
  *
- *   <SilEReader progress?={0} vent?={[x, y, z] (WORLD space)} rise?={1.5} text?={…} title?="1984" pale?={0.82}
- *               ink?={GREYS.g3} ash?={GREYS.g7} ventRed?={1.3} flakes?={5} flakeSize?={1} seed?={1} rim? color? fog? {...group}/>
+ *   <SilEReader progress?={0} vent?={[x, y, z] (WORLD space)} rise?={1.5} text?={…} title?="1984" subtitle?="PART ONE"
+ *               pale?={0.82} ink?={GREYS.g3} ash?={GREYS.g7} ventRed?={1.3} flakes?={5} flakeSize?={1} seed?={1} rim? color?
+ *               fog? {...group}>{page content (optional)}</SilEReader>
  *   <HeldSilEReader mode?='read'|'show' {...same props}/>      // <SilGuy rightHand={…}/>
  *
  *   progress  0 = full page … 1 = every word gone. Words leave roughly top → bottom (with jitter); each takes 0.38 of the
@@ -17,11 +18,24 @@
  *   ventRed   authRed intensity flakes pick up in the last 30% of their path (TENURE's vent swallowing them). 0 = none.
  *   flakes    ash flakes per word (one draw call for all; ≈ 80 words × flakes).
  *   flakeSize flake size multiplier (1 = 2–5 mm flakes for close-ups; use ~2.5–3 in wide shots so the stream reads).
- *   text      page body (auto-wrapped, Futura, original filler — not Orwell's text); title = big heading word.
- * The screen, words and ash are userData.silKeep (they stay pale/grey inside <SilGuy>); the device body is a silhouette.
+ *   text      page body (auto-wrapped, Futura, original filler — not Orwell's text; '' = no body); title = big heading
+ *             word; subtitle = the small line under it ('PART ONE' by default, e.g. 'GEORGE ORWELL'; '' = none).
+ *   children  page content slot, drawn in the PAGE frame (SILEREADER.page): origin = screen centre on its surface, +X right,
+ *             +Y text-up, +Z out of the page, metres; the screen is 0.09 × 0.12 (x ±0.045, y ±0.06). It sits 1.5 mm in
+ *             front of the printed words and does not peel or turn to ash. SILEREADER.page.body = the text block under
+ *             the header ({x0, x1, width, yTop, yBottom}). Example — the sung line printed on the page in ink:
+ *               <SilEReader text="" subtitle="GEORGE ORWELL">
+ *                 <WorldLyric line={4} time={t} mode="paint" color={GREYS.g2} fog={false} size={0.0075} align="left"
+ *                   anchor="top" maxWidth={SILEREADER.page.body.width} renderOrder={3}
+ *                   position={[SILEREADER.page.body.x0, SILEREADER.page.body.yTop, 0]}/>
+ *               </SilEReader>
+ * The screen, words, ash and children are userData.silKeep (they keep their own look inside <SilGuy>); the device body
+ * is a silhouette.
  *
  * Frame (same as the Y2K EReader): origin = device CENTRE, screen faces +Z, upright (+Y). 0.122 × 0.172 × 0.0095 m.
- * SILEREADER = {size, screenCenter, screenSize}.
+ * SILEREADER = {size, screenCenter, screenSize, page}. HELD_SILEREADER = {read, show}: the {position, rotation} of the
+ * device in the right-hand grip frame for each <HeldSilEReader> mode; heldSilEReaderMatrix(mode) = the same as a Matrix4
+ * (world matrix of the held device = guy root × guyJointMatrix(pose, 'gripR', {R: true}) × heldSilEReaderMatrix('read')).
  * <HeldSilEReader mode='read'> (default): for mergePose(guyHoldUp(0, t), {headPitch: 0.5}) — the fist holds the bottom edge
  *   at his chest, the screen faces UP toward his face, the top edge points away from him. Frame the page from a high 3/4.
  * <HeldSilEReader mode='show'>: the HeldBook grip — at guyHoldUp(1) the screen faces the camera in front of him.
@@ -38,11 +52,38 @@ const W = 0.122, H = 0.172, D = 0.0095;
 const SW = 0.09, SH = 0.12, SY = 0.013;
 const CW = 512, CH = 683;
 const FLY = 0.38;
+// page canvas layout (px): side margin, body first baseline / line pitch / size, last baseline
+const MX = CW * 0.09, BODY_Y = 186, BODY_LH = 37, BODY_PX = 23, BODY_END = CH - 30;
+/** page canvas px → page metres (origin = screen centre, +Y up) */
+const pageX = (px: number) => (px / CW - 0.5) * SW;
+const pageY = (py: number) => (0.5 - py / CH) * SH;
+/** the content slot (children) sits this far in front of the screen surface, over the printed words */
+const SLOT_Z = 0.0015;
 
 export const SILEREADER = {
   size: [W, H, D] as V3,
   screenCenter: [0, SY, D / 2 + 0.0006] as V3,
   screenSize: [SW, SH] as [number, number],
+  /**
+   * The page frame used by the children slot: origin = screen centre on its surface, +X right, +Y = text-up, +Z out of
+   * the page (toward the reader), metres. The screen spans x ±SW/2 (0.045), y ±SH/2 (0.06).
+   * `body` is the block the filler text is set in, under the title / subtitle header: left/right edge, cap top of the
+   * first line and the last baseline — e.g. a sung line at `position={[body.x0, body.yTop, 0]}` with `anchor="top"`,
+   * `align="left"`, `maxWidth={body.width}`.
+   */
+  page: {
+    size: [SW, SH] as [number, number],
+    body: {
+      x0: pageX(MX),
+      x1: pageX(CW - MX),
+      width: pageX(CW - MX) - pageX(MX),
+      yTop: pageY(BODY_Y - BODY_PX * 0.82),
+      yBottom: pageY(BODY_END),
+    },
+    /** title baseline / subtitle baseline (centred on x = 0) */
+    titleY: pageY(92),
+    subtitleY: pageY(128),
+  },
 };
 
 export const SILEREADER_TEXT =
@@ -51,27 +92,33 @@ export const SILEREADER_TEXT =
   'night was included in his plan. In here the paper said nothing at all, and he loved it for that. He turned the ' +
   'page slowly, as if somebody might be listening, and the dog sighed at his feet.';
 
-type Word = {x: number; y: number; w: number; h: number; rect: [number, number, number, number]; row: number};
+type Word = {x: number; y: number; w: number; h: number; rect: [number, number, number, number]; row: number; label: string; font: string};
 
-const layout = (ctx: CanvasRenderingContext2D, title: string, text: string): {words: Word[]; rows: number} => {
+const layout = (ctx: CanvasRenderingContext2D, title: string, subtitle: string, text: string): {words: Word[]; rows: number} => {
   const words: Word[] = [];
-  const mx = CW * 0.09;
+  const mx = MX;
   ctx.textBaseline = 'alphabetic';
-  // title
+  // title (an empty title / subtitle is left out)
   const tpx = 54;
-  ctx.font = `600 ${tpx}px ${SFONTS.futura}`;
-  const tw = ctx.measureText(title).width;
-  words.push({x: CW / 2 - tw / 2, y: 92, w: tw, h: tpx, rect: [0, 0, 0, 0], row: 0});
+  const tfont = `600 ${tpx}px ${SFONTS.futura}`;
+  if (title) {
+    ctx.font = tfont;
+    const tw = ctx.measureText(title).width;
+    words.push({x: CW / 2 - tw / 2, y: 92, w: tw, h: tpx, rect: [0, 0, 0, 0], row: 0, label: title, font: tfont});
+  }
   const spx = 17;
-  ctx.font = `${spx}px ${SFONTS.futura}`;
-  const st = 'PART ONE';
-  const sw = ctx.measureText(st).width;
-  words.push({x: CW / 2 - sw / 2, y: 128, w: sw, h: spx, rect: [0, 0, 0, 0], row: 1});
+  const sfont = `${spx}px ${SFONTS.futura}`;
+  if (subtitle) {
+    ctx.font = sfont;
+    const sw = ctx.measureText(subtitle).width;
+    words.push({x: CW / 2 - sw / 2, y: 128, w: sw, h: spx, rect: [0, 0, 0, 0], row: 1, label: subtitle, font: sfont});
+  }
   // body
-  const px = 23, lh = 37;
-  ctx.font = `${px}px ${SFONTS.futura}`;
+  const px = BODY_PX, lh = BODY_LH;
+  const bfont = `${px}px ${SFONTS.futura}`;
+  ctx.font = bfont;
   const space = ctx.measureText(' ').width;
-  let x = mx + px * 1.2, y = 186, row = 2;
+  let x = mx + px * 1.2, y = BODY_Y, row = 2;
   for (const t of text.split(/\s+/).filter(Boolean)) {
     const w = ctx.measureText(t).width;
     if (x + w > CW - mx) {
@@ -79,26 +126,25 @@ const layout = (ctx: CanvasRenderingContext2D, title: string, text: string): {wo
       y += lh;
       row++;
     }
-    if (y > CH - 30) break;
-    words.push({x, y, w, h: px, rect: [0, 0, 0, 0], row});
+    if (y > BODY_END) break;
+    words.push({x, y, w, h: px, rect: [0, 0, 0, 0], row, label: t, font: bfont});
     x += w + space;
   }
   return {words, rows: row + 1};
 };
 
-const buildPage = (title: string, text: string) => {
+const buildPage = (title: string, subtitle: string, text: string) => {
   const canvas = document.createElement('canvas');
   canvas.width = CW;
   canvas.height = CH;
   const ctx = canvas.getContext('2d')!;
-  const {words, rows} = layout(ctx, title, text);
-  const labels = [title, 'PART ONE', ...text.split(/\s+/).filter(Boolean)];
+  const {words, rows} = layout(ctx, title, subtitle, text);
   ctx.clearRect(0, 0, CW, CH);
   ctx.fillStyle = '#ffffff';
-  words.forEach((wd, i) => {
-    const px = i === 0 ? 54 : i === 1 ? 17 : 23;
-    ctx.font = `${i === 0 ? '600 ' : ''}${px}px ${SFONTS.futura}`;
-    ctx.fillText(labels[i], wd.x, wd.y);
+  words.forEach((wd) => {
+    const px = wd.h;
+    ctx.font = wd.font;
+    ctx.fillText(wd.label, wd.x, wd.y);
     // rect in UV (texture flipY: v = 1 − py/CH), padded
     const pad = 3;
     const x0 = wd.x - pad, x1 = wd.x + wd.w + pad, yTop = wd.y - px * 0.82 - pad, yBot = wd.y + px * 0.24 + pad;
@@ -170,6 +216,11 @@ export type SilEReaderProps = GroupProps & {
   rise?: number;
   text?: string;
   title?: string;
+  /** the small line under the title ('PART ONE'); '' = none. Peels off like the title. */
+  subtitle?: string;
+  /** content slot: rendered in the PAGE frame (SILEREADER.page: screen centre, +Y text-up, +Z out, metres), in front
+   *  of the printed words, kept out of any parent <Silhouette> (silKeep). It does not peel or turn to ash. */
+  children?: React.ReactNode;
   pale?: number;
   ink?: string;
   ash?: string;
@@ -183,11 +234,11 @@ export type SilEReaderProps = GroupProps & {
 };
 
 export const SilEReader: React.FC<SilEReaderProps> = ({
-  progress = 0, vent, rise = 1.5, text = SILEREADER_TEXT, title = '1984', pale = 0.82, ink = GREYS.g3, ash = GREYS.g7, ventRed = 1.3,
-  flakes = 5, flakeSize = 1, seed = 1, rim = null, color = S.void, fog = true, ...group
+  progress = 0, vent, rise = 1.5, text = SILEREADER_TEXT, title = '1984', subtitle = 'PART ONE', children, pale = 0.82, ink = GREYS.g3,
+  ash = GREYS.g7, ventRed = 1.3, flakes = 5, flakeSize = 1, seed = 1, rim = null, color = S.void, fog = true, ...group
 }) => {
   const ref = useRef<THREE.Group>(null);
-  const page = useMemo(() => buildPage(title, text), [title, text]);
+  const page = useMemo(() => buildPage(title, subtitle, text), [title, subtitle, text]);
   useLayoutEffect(() => () => page.tex.dispose(), [page]);
   const nW = page.words.length;
   const nF = nW * Math.max(0, Math.round(flakes));
@@ -335,26 +386,38 @@ export const SilEReader: React.FC<SilEReaderProps> = ({
           <mesh geometry={screenGeo} material={screenMat} position={[0, SY, D / 2 + 0.0006]} />
           <primitive object={wordsMesh} />
           <primitive object={flakeMesh} />
+          {children ? <group position={[0, SY, D / 2 + SLOT_Z]}>{children}</group> : null}
         </group>
       </group>
     </group>
   );
 };
 
-/** read: screen → grip +Z (up toward his face at guyHoldUp(0)), device top → grip −X (away from him) */
-const READ_ROT = basisEuler([0, 1, 0], [-1, 0, 0], [0, 0, 1]);
+/**
+ * The <HeldSilEReader> grips: device-centre position + Euler rotation in the right-hand grip frame
+ * (guyJointMatrix(pose, 'gripR', {R: true})).
+ *   read: screen → grip +Z (up toward his face at guyHoldUp(0)), device top → grip −X (away from him)
+ *   show: the HeldBook grip (GRIP.book) — at guyHoldUp(1) the screen faces the camera in front of him
+ */
+export const HELD_SILEREADER = {
+  read: {position: [-0.07, -0.012, 0.012] as V3, rotation: basisEuler([0, 1, 0], [-1, 0, 0], [0, 0, 1])},
+  show: {position: [0, -0.046, 0] as V3, rotation: GRIP.book},
+};
+
+/** The device matrix in the grip frame for a <HeldSilEReader> mode. World matrix of the held device:
+ *  guyRoot.multiply(guyJointMatrix(pose, 'gripR', {R: true})).multiply(heldSilEReaderMatrix('read')). */
+export const heldSilEReaderMatrix = (mode: 'read' | 'show' = 'read') => {
+  const g = HELD_SILEREADER[mode];
+  return new THREE.Matrix4().compose(new THREE.Vector3(...g.position), new THREE.Quaternion().setFromEuler(new THREE.Euler(...g.rotation)),
+    new THREE.Vector3(1, 1, 1));
+};
 
 export type HeldSilEReaderProps = SilEReaderProps & {mode?: 'read' | 'show'};
 /** E-reader in <SilGuy rightHand>: 'read' (guyHoldUp(0): screen up toward his face) or 'show' (guyHoldUp(1): toward camera). */
-export const HeldSilEReader: React.FC<HeldSilEReaderProps> = ({mode = 'read', ...props}) =>
-  mode === 'read' ? (
-    <group position={[-0.07, -0.012, 0.012]} rotation={READ_ROT}>
-      <SilEReader {...props} />
-    </group>
-  ) : (
-    <group position={[0, -0.046, 0]} rotation={GRIP.book}>
-      <SilEReader {...props} />
-    </group>
-  );
+export const HeldSilEReader: React.FC<HeldSilEReaderProps> = ({mode = 'read', ...props}) => (
+  <group position={HELD_SILEREADER[mode].position} rotation={HELD_SILEREADER[mode].rotation}>
+    <SilEReader {...props} />
+  </group>
+);
 
 export default SilEReader;
